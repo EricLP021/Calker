@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Valuation DCF - Análise Fundamentalista</title>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // Ícones SVG
+        const Calculator = () => (
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+        );
+
+        const Upload = () => (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+        );
+
+        const FileText = () => (
+            <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+        );
+
+        const CheckCircle = () => (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        );
+
+        const AlertCircle = () => (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        );
+
+        const Building2 = () => (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+        );
+
+        const Landmark = () => (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+            </svg>
+        );
+
+        const Target = () => (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+            </svg>
+        );
+
+        const BarChart3 = () => (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+        );
+
+        const DollarSign = () => (
+            <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        );
+
+        function ValuationCalculator() {
+            const [tipoEmpresa, setTipoEmpresa] = useState('nao-financeira');
+            const [ebit, setEbit] = useState(1457.6);
+            const [lucroLiq, setLucroLiq] = useState(1222.4);
+            const [depre, setDepre] = useState(167.6);
+            const [capex, setCapex] = useState(344.6);
+            const [ncgVar, setNcgVar] = useState(685.1);
+            const [numAcoes, setNumAcoes] = useState(1127594551);
+            const [fluxoDivida, setFluxoDivida] = useState(306.9);
+            const [payout, setPayout] = useState(50);
+            const [pdfStatus, setPdfStatus] = useState(null);
+            
+            const [taxaDI, setTaxaDI] = useState(13.5);
+            const [premioRisco, setPremioRisco] = useState(2.0);
+            const [taxaCrescPerp, setTaxaCrescPerp] = useState(3.0);
+            const [anoBase, setAnoBase] = useState(2024);
+            
+            const [taxaCresc2025, setTaxaCresc2025] = useState(5.0);
+            const [taxaCresc2026, setTaxaCresc2026] = useState(4.0);
+            const [taxaCresc2027, setTaxaCresc2027] = useState(3.5);
+
+            const [roicAtual, setRoicAtual] = useState(15.0);
+            const [custoCapital, setCustoCapital] = useState(12.0);
+
+            const extrairDadosPDF = async (file) => {
+                setPdfStatus({ type: 'loading', message: 'Processando PDF...' });
+                
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const uint8Array = new Uint8Array(arrayBuffer);
+                    const decoder = new TextDecoder('utf-8');
+                    let texto = '';
+                    
+                    try {
+                        texto = decoder.decode(uint8Array);
+                    } catch (e) {
+                        const decoderLatin = new TextDecoder('latin1');
+                        texto = decoderLatin.decode(uint8Array);
+                    }
+
+                    const padroes = {
+                        ebit: [
+                            /resultado\s+antes\s+(?:do\s+)?(?:resultado\s+)?financeiro.*?[\s\(]+([\d.,]+)/gi,
+                            /lucro\s+operacional.*?[\s\(]+([\d.,]+)/gi,
+                            /(?:3\.05|305).*?[\s\(]+([\d.,]+)/gi,
+                            /EBIT.*?[\s\(]+([\d.,]+)/gi,
+                        ],
+                        lucroLiquido: [
+                            /lucro\s+(?:líquido|liquido)(?:\s+do\s+período)?.*?[\s\(]+([\d.,]+)/gi,
+                            /(?:3\.11|311).*?[\s\(]+([\d.,]+)/gi,
+                            /resultado\s+líquido.*?[\s\(]+([\d.,]+)/gi,
+                        ],
+                        depreciacao: [
+                            /depreciação.*?[\s\(]+([\d.,]+)/gi,
+                            /amortização.*?[\s\(]+([\d.,]+)/gi,
+                        ],
+                        capex: [
+                            /(?:aquisição|aquis).*?(?:imobilizado|ativo).*?[\s\(]+([\d.,]+)/gi,
+                            /CAPEX.*?[\s\(]+([\d.,]+)/gi,
+                        ],
+                        numeroAcoes: [
+                            /(?:quantidade|número).*?ações.*?[\s\(]+([\d.,]+)/gi,
+                            /ações.*?em.*?circulação.*?[\s\(]+([\d.,]+)/gi,
+                        ],
+                    };
+
+                    const dados = {};
+                    let encontrados = 0;
+
+                    for (const [campo, regexList] of Object.entries(padroes)) {
+                        for (const regex of regexList) {
+                            const matches = [...texto.matchAll(regex)];
+                            if (matches.length > 0) {
+                                const valores = matches
+                                    .map(m => {
+                                        const val = m[1].replace(/\./g, '').replace(',', '.');
+                                        return parseFloat(val);
+                                    })
+                                    .filter(v => !isNaN(v) && v > 0);
+                                
+                                if (valores.length > 0) {
+                                    dados[campo] = Math.max(...valores);
+                                    encontrados++;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if (encontrados > 0) {
+                        if (dados.ebit) setEbit(dados.ebit);
+                        if (dados.lucroLiquido) setLucroLiq(dados.lucroLiquido);
+                        if (dados.depreciacao) setDepre(dados.depreciacao);
+                        if (dados.capex) setCapex(dados.capex);
+                        if (dados.numeroAcoes) setNumAcoes(dados.numeroAcoes);
+                        
+                        setPdfStatus({ 
+                            type: 'success', 
+                            message: `${encontrados} valores extraídos com sucesso!`,
+                            data: dados
+                        });
+                    } else {
+                        setPdfStatus({ 
+                            type: 'warning', 
+                            message: 'PDF processado, mas nenhum valor foi identificado automaticamente.' 
+                        });
+                    }
+                    
+                } catch (error) {
+                    setPdfStatus({ 
+                        type: 'error', 
+                        message: 'Erro ao processar o PDF.' 
+                    });
+                }
+            };
+
+            const handleFileUpload = (event) => {
+                const file = event.target.files[0];
+                if (file && file.type === 'application/pdf') {
+                    extrairDadosPDF(file);
+                }
+            };
+
+            const nopat = ebit * 0.66;
+            const investLiq = capex - depre;
+            const fcff = nopat + depre - capex - ncgVar;
+            const fcfe = lucroLiq + depre - capex - ncgVar + fluxoDivida;
+            const reinvestimentoTotal = investLiq + ncgVar;
+            const sobraNopat = nopat - reinvestimentoTotal;
+            const taxaRr = reinvestimentoTotal / nopat;
+
+            const wacc = taxaDI + premioRisco;
+
+            const fcfe2025 = fcfe * (1 + taxaCresc2025 / 100);
+            const fcfe2026 = fcfe2025 * (1 + taxaCresc2026 / 100);
+            const fcfe2027 = fcfe2026 * (1 + taxaCresc2027 / 100);
+
+            const roic2025 = roicAtual > custoCapital 
+                ? roicAtual - (roicAtual - custoCapital) * 0.2 
+                : roicAtual;
+            const roic2026 = roic2025 > custoCapital 
+                ? roic2025 - (roic2025 - custoCapital) * 0.2 
+                : roic2025;
+            const roic2027 = roic2026 > custoCapital 
+                ? roic2026 - (roic2026 - custoCapital) * 0.2 
+                : roic2026;
+
+            const vp2025 = fcfe2025 / Math.pow(1 + wacc / 100, 1);
+            const vp2026 = fcfe2026 / Math.pow(1 + wacc / 100, 2);
+            const vp2027 = fcfe2027 / Math.pow(1 + wacc / 100, 3);
+
+            const fluxoPerpetuidade = fcfe2027 * (1 + taxaCrescPerp / 100);
+            const valorPerpetuidade = fluxoPerpetuidade / ((wacc - taxaCrescPerp) / 100);
+            const vpPerpetuidade = valorPerpetuidade / Math.pow(1 + wacc / 100, 3);
+
+            const valorTotalFirma = vp2025 + vp2026 + vp2027 + vpPerpetuidade;
+            const precoJustoPorAcao = (valorTotalFirma * 1000000) / numAcoes;
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+                    <div className="max-w-7xl mx-auto">
+                        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+                            <div className="flex items-center gap-3 mb-2">
+                                <Calculator />
+                                <h1 className="text-3xl font-bold text-gray-800">
+                                    Valuation por Fluxo de Caixa Descontado (DCF)
+                                </h1>
+                            </div>
+                            <p className="text-gray-600">
+                                Análise completa com projeções, convergência de ROIC e perpetuidade
+                            </p>
+                        </div>
+
+                        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+                            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                                <Upload />
+                                Upload de ITR/DFP (CVM) - Ano Base: {anoBase}
+                            </h2>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-indigo-400 transition-colors">
+                                    <FileText />
+                                    <label className="cursor-pointer">
+                                        <span className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors inline-block">
+                                            Selecionar PDF
+                                        </span>
+                                        <input
+                                            type="file"
+                                            accept=".pdf"
+                                            onChange={handleFileUpload}
+                                            className="hidden"
+                                        />
+                                    </label>
+                                    <p className="text-sm text-gray-500 mt-3">
+                                        ITR ou DFP em PDF para extração automática
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Ano Base das Demonstrações
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={anoBase}
+                                        onChange={(e) => setAnoBase(parseInt(e.target.value) || 2024)}
+                                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                    />
+                                </div>
+                            </div>
+
+                            {pdfStatus && (
+                                <div className={`mt-4 p-4 rounded-lg flex items-start gap-3 ${
+                                    pdfStatus.type === 'success' ? 'bg-green-50 border border-green-200' :
+                                    pdfStatus.type === 'error' ? 'bg-red-50 border border-red-200' :
+                                    pdfStatus.type === 'warning' ? 'bg-yellow-50 border border-yellow-200' :
+                                    'bg-blue-50 border border-blue-200'
+                                }`}>
+                                    {pdfStatus.type === 'success' && <CheckCircle />}
+                                    {pdfStatus.type === 'error' && <AlertCircle />}
+                                    
+                                    <div className="flex-1">
+                                        <p className={`font-medium ${
+                                            pdfStatus.type === 'success' ? 'text-green-800' :
+                                            pdfStatus.type === 'error' ? 'text-red-800' :
+                                            'text-yellow-800'
+                                        }`}>
+                                            {pdfStatus.message}
+                                        </p>
+                                        
+                                        {pdfStatus.data && (
+                                            <div className="mt-2 text-sm space-y-1">
+                                                {pdfStatus.data.ebit && <p>✓ EBIT: R$ {pdfStatus.data.ebit.toLocaleString('pt-BR', {minimumFractionDigits: 2})} Mi</p>}
+                                                {pdfStatus.data.lucroLiquido && <p>✓ Lucro Líquido: R$ {pdfStatus.data.lucroLiquido.toLocaleString('pt-BR', {minimumFractionDigits: 2})} Mi</p>}
+                                                {pdfStatus.data.numeroAcoes && <p>✓ Ações: {pdfStatus.data.numeroAcoes.toLocaleString('pt-BR')}</p>}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="bg-gradient-to-r from-emerald-500 to-green-600 rounded-lg shadow-lg p-8 text-white mb-6">
+                            <div className="flex items-center gap-3 mb-4">
+                                <DollarSign />
+                                <div>
+                                    <h2 className="text-3xl font-bold">Preço Justo por Ação (DCF)</h2>
+                                    <p className="text-green-100 text-sm">
+                                        Baseado em Fluxo de Caixa Descontado com perpetuidade
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="text-6xl font-bold mb-4">
+                                R$ {precoJustoPorAcao.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                                <div className="bg-white bg-opacity-20 p-4 rounded-lg">
+                                    <div className="text-sm text-green-100">Valor da Firma</div>
+                                    <div className="text-xl font-bold">R$ {valorTotalFirma.toLocaleString('pt-BR', {minimumFractionDigits: 2})} Mi</div>
+                                </div>
+                                <div className="bg-white bg-opacity-20 p-4 rounded-lg">
+                                    <div className="text-sm text-green-100">WACC (Taxa Desconto)</div>
+                                    <div className="text-xl font-bold">{wacc.toFixed(2)}%</div>
+                                </div>
+                                <div className="bg-white bg-opacity-20 p-4 rounded-lg">
+                                    <div className="text-sm text-green-100">FCFE {anoBase}</div>
+                                    <div className="text-xl font-bold">R$ {fcfe.toLocaleString('pt-BR', {minimumFractionDigits: 2})} Mi</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <details className="bg-white rounded-lg shadow-lg p-6 mb-6">
+                            <summary className="text-xl font-semibold cursor-pointer hover:text-indigo-600">
+                                📊 Ver Dados Detalhados e Configurações
+                            </summary>
+                            
+                            <div className="mt-6 space-y-6">
+                                {/* Resto dos campos de entrada aqui */}
+                                <p className="text-sm text-gray-600">
+                                    Expanda para ver e editar todos os parâmetros da análise.
+                                </p>
+                            </div>
+                        </details>
+
+                        <div className="bg-white rounded-lg shadow-lg p-6">
+                            <h3 className="text-lg font-semibold mb-3">Fundamentação Metodológica</h3>
+                            <div className="text-sm text-gray-700 space-y-2">
+                                <p><strong>Modelo DCF:</strong> Valor = Σ (FCFEt / (1 + WACC)^t) + Valor Perpetuidade</p>
+                                <p><strong>Perpetuidade (Gordon):</strong> VP = [FCFE × (1 + g)] / (WACC - g) × 1/(1 + WACC)^n</p>
+                                <p><strong>WACC:</strong> Taxa DI Futura + Prêmio de Risco = {wacc.toFixed(2)}%</p>
+                                <p className="text-xs text-gray-500 mt-3">
+                                    Referências: Damodaran, Assaf Neto, Póvoa | Códigos CVM: 3.05 (EBIT), 3.11 (Lucro Líquido)
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<ValuationCalculator />, document.getElementById('root'));
+    </script>
+</body>
+</html>
