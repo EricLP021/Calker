@@ -4,83 +4,55 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calculadora de Valuation DCF - Análise Fundamentalista</title>
-    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="description" content="Calculadora profissional de Valuation por Fluxo de Caixa Descontado (DCF) com extração automática de PDFs CVM">
+    
+    <!-- Tailwind CSS compilado - SEM avisos -->
+    <link href="https://unpkg.com/tailwindcss@3.4.0/dist/tailwind.min.css" rel="stylesheet">
+    
+    <!-- React - Produção -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
     <style>
-        body { margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+        body { 
+            margin: 0; 
+            padding: 0; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(245, 87, 108, 0.3);
+        }
+        .resultado-destaque {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .8; }
+        }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
-    <script type="text/babel">
-        const { useState } = React;
+    <script>
+        const { useState, createElement: h } = React;
 
-        // Ícones SVG
-        const Calculator = () => (
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-            </svg>
-        );
-
-        const Upload = () => (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-            </svg>
-        );
-
-        const FileText = () => (
-            <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-        );
-
-        const CheckCircle = () => (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-        );
-
-        const AlertCircle = () => (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-        );
-
-        const Building2 = () => (
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
-        );
-
-        const Landmark = () => (
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
-            </svg>
-        );
-
-        const Target = () => (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-            </svg>
-        );
-
-        const BarChart3 = () => (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-        );
-
-        const DollarSign = () => (
-            <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-        );
-
+        // Componente principal
         function ValuationCalculator() {
-            const [tipoEmpresa, setTipoEmpresa] = useState('nao-financeira');
+            // Estados principais
             const [ebit, setEbit] = useState(1457.6);
             const [lucroLiq, setLucroLiq] = useState(1222.4);
             const [depre, setDepre] = useState(167.6);
@@ -88,9 +60,9 @@
             const [ncgVar, setNcgVar] = useState(685.1);
             const [numAcoes, setNumAcoes] = useState(1127594551);
             const [fluxoDivida, setFluxoDivida] = useState(306.9);
-            const [payout, setPayout] = useState(50);
             const [pdfStatus, setPdfStatus] = useState(null);
             
+            // Parâmetros de projeção
             const [taxaDI, setTaxaDI] = useState(13.5);
             const [premioRisco, setPremioRisco] = useState(2.0);
             const [taxaCrescPerp, setTaxaCrescPerp] = useState(3.0);
@@ -103,6 +75,51 @@
             const [roicAtual, setRoicAtual] = useState(15.0);
             const [custoCapital, setCustoCapital] = useState(12.0);
 
+            const [calculado, setCalculado] = useState(false);
+            const [mostrarConfig, setMostrarConfig] = useState(false);
+
+            // Função para calcular
+            const calcular = () => {
+                setCalculado(true);
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            };
+
+            // Função para limpar
+            const limpar = () => {
+                if (confirm('Deseja realmente limpar todos os dados?')) {
+                    setEbit(0);
+                    setLucroLiq(0);
+                    setDepre(0);
+                    setCapex(0);
+                    setNcgVar(0);
+                    setNumAcoes(0);
+                    setFluxoDivida(0);
+                    setTaxaDI(13.5);
+                    setPremioRisco(2.0);
+                    setTaxaCrescPerp(3.0);
+                    setTaxaCresc2025(5.0);
+                    setTaxaCresc2026(4.0);
+                    setTaxaCresc2027(3.5);
+                    setRoicAtual(15.0);
+                    setCustoCapital(12.0);
+                    setCalculado(false);
+                    setPdfStatus(null);
+                }
+            };
+
+            // Função para usar dados de exemplo
+            const usarExemplo = () => {
+                setEbit(1457.6);
+                setLucroLiq(1222.4);
+                setDepre(167.6);
+                setCapex(344.6);
+                setNcgVar(685.1);
+                setNumAcoes(1127594551);
+                setFluxoDivida(306.9);
+                setPdfStatus({ type: 'success', message: 'Dados de exemplo carregados (Marcopolo S.A.)' });
+            };
+
+            // Extração de PDF
             const extrairDadosPDF = async (file) => {
                 setPdfStatus({ type: 'loading', message: 'Processando PDF...' });
                 
@@ -129,7 +146,6 @@
                         lucroLiquido: [
                             /lucro\s+(?:líquido|liquido)(?:\s+do\s+período)?.*?[\s\(]+([\d.,]+)/gi,
                             /(?:3\.11|311).*?[\s\(]+([\d.,]+)/gi,
-                            /resultado\s+líquido.*?[\s\(]+([\d.,]+)/gi,
                         ],
                         depreciacao: [
                             /depreciação.*?[\s\(]+([\d.,]+)/gi,
@@ -177,20 +193,20 @@
                         
                         setPdfStatus({ 
                             type: 'success', 
-                            message: `${encontrados} valores extraídos com sucesso!`,
+                            message: `✓ ${encontrados} valores extraídos com sucesso!`,
                             data: dados
                         });
                     } else {
                         setPdfStatus({ 
                             type: 'warning', 
-                            message: 'PDF processado, mas nenhum valor foi identificado automaticamente.' 
+                            message: '⚠️ PDF processado, mas valores não identificados. Preencha manualmente.' 
                         });
                     }
                     
                 } catch (error) {
                     setPdfStatus({ 
                         type: 'error', 
-                        message: 'Erro ao processar o PDF.' 
+                        message: '❌ Erro ao processar PDF. Verifique o arquivo.' 
                     });
                 }
             };
@@ -202,6 +218,7 @@
                 }
             };
 
+            // Cálculos
             const nopat = ebit * 0.66;
             const investLiq = capex - depre;
             const fcff = nopat + depre - capex - ncgVar;
@@ -216,15 +233,9 @@
             const fcfe2026 = fcfe2025 * (1 + taxaCresc2026 / 100);
             const fcfe2027 = fcfe2026 * (1 + taxaCresc2027 / 100);
 
-            const roic2025 = roicAtual > custoCapital 
-                ? roicAtual - (roicAtual - custoCapital) * 0.2 
-                : roicAtual;
-            const roic2026 = roic2025 > custoCapital 
-                ? roic2025 - (roic2025 - custoCapital) * 0.2 
-                : roic2025;
-            const roic2027 = roic2026 > custoCapital 
-                ? roic2026 - (roic2026 - custoCapital) * 0.2 
-                : roic2026;
+            const roic2025 = roicAtual > custoCapital ? roicAtual - (roicAtual - custoCapital) * 0.2 : roicAtual;
+            const roic2026 = roic2025 > custoCapital ? roic2025 - (roic2025 - custoCapital) * 0.2 : roic2025;
+            const roic2027 = roic2026 > custoCapital ? roic2026 - (roic2026 - custoCapital) * 0.2 : roic2026;
 
             const vp2025 = fcfe2025 / Math.pow(1 + wacc / 100, 1);
             const vp2026 = fcfe2026 / Math.pow(1 + wacc / 100, 2);
@@ -237,149 +248,362 @@
             const valorTotalFirma = vp2025 + vp2026 + vp2027 + vpPerpetuidade;
             const precoJustoPorAcao = (valorTotalFirma * 1000000) / numAcoes;
 
-            return (
-                <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-                    <div className="max-w-7xl mx-auto">
-                        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-                            <div className="flex items-center gap-3 mb-2">
-                                <Calculator />
-                                <h1 className="text-3xl font-bold text-gray-800">
-                                    Valuation por Fluxo de Caixa Descontado (DCF)
-                                </h1>
-                            </div>
-                            <p className="text-gray-600">
-                                Análise completa com projeções, convergência de ROIC e perpetuidade
-                            </p>
-                        </div>
+            const fmt = (val) => val.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
-                        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-                            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                                <Upload />
-                                Upload de ITR/DFP (CVM) - Ano Base: {anoBase}
-                            </h2>
+            return h('div', { className: 'min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4' },
+                h('div', { className: 'max-w-7xl mx-auto' },
+                    
+                    // Header
+                    h('div', { className: 'bg-white rounded-lg shadow-lg p-6 mb-6' },
+                        h('h1', { className: 'text-3xl font-bold text-gray-800 mb-2' }, 
+                            '📊 Calculadora de Valuation DCF'
+                        ),
+                        h('p', { className: 'text-gray-600' }, 
+                            'Análise fundamentalista completa com projeções e perpetuidade'
+                        )
+                    ),
+
+                    // Upload de PDF
+                    h('div', { className: 'bg-white rounded-lg shadow-lg p-6 mb-6' },
+                        h('h2', { className: 'text-xl font-semibold mb-4' }, 
+                            '📁 Upload de ITR/DFP (CVM) - Ano Base: ' + anoBase
+                        ),
+                        
+                        h('div', { className: 'grid grid-cols-1 md:grid-cols-3 gap-4 mb-4' },
+                            h('div', { className: 'border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-400 transition-colors' },
+                                h('label', { className: 'cursor-pointer block' },
+                                    h('div', { className: 'text-4xl mb-3' }, '📄'),
+                                    h('span', { className: 'bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 inline-block text-sm font-medium' }, 
+                                        'Selecionar PDF'
+                                    ),
+                                    h('input', { 
+                                        type: 'file',
+                                        accept: '.pdf',
+                                        onChange: handleFileUpload,
+                                        className: 'hidden'
+                                    }),
+                                    h('p', { className: 'text-xs text-gray-500 mt-2' }, 
+                                        'ITR ou DFP da CVM'
+                                    )
+                                )
+                            ),
                             
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-indigo-400 transition-colors">
-                                    <FileText />
-                                    <label className="cursor-pointer">
-                                        <span className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors inline-block">
-                                            Selecionar PDF
-                                        </span>
-                                        <input
-                                            type="file"
-                                            accept=".pdf"
-                                            onChange={handleFileUpload}
-                                            className="hidden"
-                                        />
-                                    </label>
-                                    <p className="text-sm text-gray-500 mt-3">
-                                        ITR ou DFP em PDF para extração automática
-                                    </p>
-                                </div>
+                            h('div', null,
+                                h('label', { className: 'block text-sm font-medium text-gray-700 mb-2' }, 
+                                    'Ano Base'
+                                ),
+                                h('input', { 
+                                    type: 'number',
+                                    value: anoBase,
+                                    onChange: (e) => setAnoBase(parseInt(e.target.value) || 2024),
+                                    className: 'w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500'
+                                })
+                            ),
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Ano Base das Demonstrações
-                                    </label>
-                                    <input
-                                        type="number"
-                                        value={anoBase}
-                                        onChange={(e) => setAnoBase(parseInt(e.target.value) || 2024)}
-                                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                                    />
-                                </div>
-                            </div>
+                            h('div', { className: 'flex items-end' },
+                                h('button', { 
+                                    onClick: usarExemplo,
+                                    className: 'w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-4 rounded-lg transition-colors text-sm'
+                                }, '🎯 Usar Dados de Exemplo')
+                            )
+                        ),
 
-                            {pdfStatus && (
-                                <div className={`mt-4 p-4 rounded-lg flex items-start gap-3 ${
-                                    pdfStatus.type === 'success' ? 'bg-green-50 border border-green-200' :
-                                    pdfStatus.type === 'error' ? 'bg-red-50 border border-red-200' :
-                                    pdfStatus.type === 'warning' ? 'bg-yellow-50 border border-yellow-200' :
-                                    'bg-blue-50 border border-blue-200'
-                                }`}>
-                                    {pdfStatus.type === 'success' && <CheckCircle />}
-                                    {pdfStatus.type === 'error' && <AlertCircle />}
-                                    
-                                    <div className="flex-1">
-                                        <p className={`font-medium ${
-                                            pdfStatus.type === 'success' ? 'text-green-800' :
-                                            pdfStatus.type === 'error' ? 'text-red-800' :
-                                            'text-yellow-800'
-                                        }`}>
-                                            {pdfStatus.message}
-                                        </p>
-                                        
-                                        {pdfStatus.data && (
-                                            <div className="mt-2 text-sm space-y-1">
-                                                {pdfStatus.data.ebit && <p>✓ EBIT: R$ {pdfStatus.data.ebit.toLocaleString('pt-BR', {minimumFractionDigits: 2})} Mi</p>}
-                                                {pdfStatus.data.lucroLiquido && <p>✓ Lucro Líquido: R$ {pdfStatus.data.lucroLiquido.toLocaleString('pt-BR', {minimumFractionDigits: 2})} Mi</p>}
-                                                {pdfStatus.data.numeroAcoes && <p>✓ Ações: {pdfStatus.data.numeroAcoes.toLocaleString('pt-BR')}</p>}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                        pdfStatus && h('div', { 
+                            className: `mt-4 p-4 rounded-lg ${
+                                pdfStatus.type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' :
+                                pdfStatus.type === 'error' ? 'bg-red-50 border border-red-200 text-red-800' :
+                                pdfStatus.type === 'warning' ? 'bg-yellow-50 border border-yellow-200 text-yellow-800' :
+                                'bg-blue-50 border border-blue-200 text-blue-800'
+                            }`
+                        },
+                            h('p', { className: 'font-medium text-sm' }, pdfStatus.message),
+                            pdfStatus.data && h('div', { className: 'mt-2 text-xs space-y-1' },
+                                pdfStatus.data.ebit && h('p', null, '✓ EBIT: R$ ' + fmt(pdfStatus.data.ebit) + ' Mi'),
+                                pdfStatus.data.lucroLiquido && h('p', null, '✓ Lucro Líquido: R$ ' + fmt(pdfStatus.data.lucroLiquido) + ' Mi'),
+                                pdfStatus.data.numeroAcoes && h('p', null, '✓ Ações: ' + pdfStatus.data.numeroAcoes.toLocaleString('pt-BR'))
+                            )
+                        )
+                    ),
 
-                        <div className="bg-gradient-to-r from-emerald-500 to-green-600 rounded-lg shadow-lg p-8 text-white mb-6">
-                            <div className="flex items-center gap-3 mb-4">
-                                <DollarSign />
-                                <div>
-                                    <h2 className="text-3xl font-bold">Preço Justo por Ação (DCF)</h2>
-                                    <p className="text-green-100 text-sm">
-                                        Baseado em Fluxo de Caixa Descontado com perpetuidade
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="text-6xl font-bold mb-4">
-                                R$ {precoJustoPorAcao.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                                <div className="bg-white bg-opacity-20 p-4 rounded-lg">
-                                    <div className="text-sm text-green-100">Valor da Firma</div>
-                                    <div className="text-xl font-bold">R$ {valorTotalFirma.toLocaleString('pt-BR', {minimumFractionDigits: 2})} Mi</div>
-                                </div>
-                                <div className="bg-white bg-opacity-20 p-4 rounded-lg">
-                                    <div className="text-sm text-green-100">WACC (Taxa Desconto)</div>
-                                    <div className="text-xl font-bold">{wacc.toFixed(2)}%</div>
-                                </div>
-                                <div className="bg-white bg-opacity-20 p-4 rounded-lg">
-                                    <div className="text-sm text-green-100">FCFE {anoBase}</div>
-                                    <div className="text-xl font-bold">R$ {fcfe.toLocaleString('pt-BR', {minimumFractionDigits: 2})} Mi</div>
-                                </div>
-                            </div>
-                        </div>
+                    // Dados Financeiros
+                    h('div', { className: 'bg-white rounded-lg shadow-lg p-6 mb-6' },
+                        h('h2', { className: 'text-xl font-semibold mb-4' }, 
+                            '💰 Dados Financeiros (R$ Milhões)'
+                        ),
+                        h('div', { className: 'grid grid-cols-1 md:grid-cols-3 gap-4' },
+                            ['EBIT (3.05)', ebit, setEbit],
+                            ['Lucro Líquido (3.11)', lucroLiq, setLucroLiq],
+                            ['Depreciação/Amortização', depre, setDepre],
+                            ['CAPEX Bruto', capex, setCapex],
+                            ['Variação da NCG', ncgVar, setNcgVar],
+                            ['Total de Ações', numAcoes, setNumAcoes],
+                            ['Fluxo Líquido Dívida', fluxoDivida, setFluxoDivida]
+                        ].map(([label, val, setter], i) => 
+                            h('div', { key: i },
+                                h('label', { className: 'block text-sm font-medium text-gray-700 mb-2' }, label),
+                                h('input', { 
+                                    type: 'number',
+                                    step: '0.1',
+                                    value: val,
+                                    onChange: (e) => setter(parseFloat(e.target.value) || 0),
+                                    className: 'w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500'
+                                })
+                            )
+                        )
+                    ),
 
-                        <details className="bg-white rounded-lg shadow-lg p-6 mb-6">
-                            <summary className="text-xl font-semibold cursor-pointer hover:text-indigo-600">
-                                📊 Ver Dados Detalhados e Configurações
-                            </summary>
-                            
-                            <div className="mt-6 space-y-6">
-                                {/* Resto dos campos de entrada aqui */}
-                                <p className="text-sm text-gray-600">
-                                    Expanda para ver e editar todos os parâmetros da análise.
-                                </p>
-                            </div>
-                        </details>
+                    // Configurações Avançadas (Colapsável)
+                    h('div', { className: 'bg-white rounded-lg shadow-lg p-6 mb-6' },
+                        h('button', { 
+                            onClick: () => setMostrarConfig(!mostrarConfig),
+                            className: 'w-full text-left text-xl font-semibold flex items-center justify-between hover:text-indigo-600 transition-colors'
+                        },
+                            h('span', null, '⚙️ Parâmetros de Projeção e Desconto'),
+                            h('span', { className: 'text-2xl' }, mostrarConfig ? '▼' : '▶')
+                        ),
 
-                        <div className="bg-white rounded-lg shadow-lg p-6">
-                            <h3 className="text-lg font-semibold mb-3">Fundamentação Metodológica</h3>
-                            <div className="text-sm text-gray-700 space-y-2">
-                                <p><strong>Modelo DCF:</strong> Valor = Σ (FCFEt / (1 + WACC)^t) + Valor Perpetuidade</p>
-                                <p><strong>Perpetuidade (Gordon):</strong> VP = [FCFE × (1 + g)] / (WACC - g) × 1/(1 + WACC)^n</p>
-                                <p><strong>WACC:</strong> Taxa DI Futura + Prêmio de Risco = {wacc.toFixed(2)}%</p>
-                                <p className="text-xs text-gray-500 mt-3">
-                                    Referências: Damodaran, Assaf Neto, Póvoa | Códigos CVM: 3.05 (EBIT), 3.11 (Lucro Líquido)
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                        mostrarConfig && h('div', { className: 'mt-6 space-y-6' },
+                            h('div', { className: 'grid grid-cols-1 md:grid-cols-3 gap-4' },
+                                [
+                                    ['Taxa DI Futura (%)', taxaDI, setTaxaDI, 'Expectativa: ~13,5%'],
+                                    ['Prêmio de Risco (%)', premioRisco, setPremioRisco, 'Sugestão: 2% a 6%'],
+                                    ['Taxa Crescimento Perpétuo (%)', taxaCrescPerp, setTaxaCrescPerp, 'PIB longo prazo']
+                                ].map(([label, val, setter, hint], i) => 
+                                    h('div', { key: i },
+                                        h('label', { className: 'block text-sm font-medium text-gray-700 mb-2' }, label),
+                                        h('input', { 
+                                            type: 'number',
+                                            step: '0.1',
+                                            value: val,
+                                            onChange: (e) => setter(parseFloat(e.target.value) || 0),
+                                            className: 'w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500'
+                                        }),
+                                        h('p', { className: 'text-xs text-gray-500 mt-1' }, hint)
+                                    )
+                                )
+                            ),
+
+                            h('div', { className: 'bg-purple-50 p-4 rounded-lg' },
+                                h('p', { className: 'text-sm font-medium text-purple-900' }, 
+                                    'WACC: ' + wacc.toFixed(2) + '% (DI + Prêmio)'
+                                )
+                            ),
+
+                            h('h3', { className: 'font-semibold text-gray-800 mt-6' }, 
+                                'Taxas de Crescimento Anual'
+                            ),
+                            h('div', { className: 'grid grid-cols-1 md:grid-cols-3 gap-4' },
+                                [
+                                    [(anoBase + 1) + ' (%)', taxaCresc2025, setTaxaCresc2025],
+                                    [(anoBase + 2) + ' (%)', taxaCresc2026, setTaxaCresc2026],
+                                    [(anoBase + 3) + ' (%)', taxaCresc2027, setTaxaCresc2027]
+                                ].map(([label, val, setter], i) => 
+                                    h('div', { key: i },
+                                        h('label', { className: 'block text-sm font-medium text-gray-700 mb-2' }, label),
+                                        h('input', { 
+                                            type: 'number',
+                                            step: '0.1',
+                                            value: val,
+                                            onChange: (e) => setter(parseFloat(e.target.value) || 0),
+                                            className: 'w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500'
+                                        })
+                                    )
+                                )
+                            ),
+
+                            h('h3', { className: 'font-semibold text-gray-800 mt-6' }, 
+                                'ROIC e Sustentabilidade'
+                            ),
+                            h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-4' },
+                                [
+                                    ['ROIC Atual (%)', roicAtual, setRoicAtual],
+                                    ['Custo de Capital (%)', custoCapital, setCustoCapital]
+                                ].map(([label, val, setter], i) => 
+                                    h('div', { key: i },
+                                        h('label', { className: 'block text-sm font-medium text-gray-700 mb-2' }, label),
+                                        h('input', { 
+                                            type: 'number',
+                                            step: '0.1',
+                                            value: val,
+                                            onChange: (e) => setter(parseFloat(e.target.value) || 0),
+                                            className: 'w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500'
+                                        })
+                                    )
+                                )
+                            )
+                        )
+                    ),
+
+                    // Botões de Ação
+                    h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-4 mb-6' },
+                        h('button', { 
+                            onClick: calcular,
+                            className: 'btn-primary text-white font-bold py-4 px-8 rounded-lg shadow-lg text-lg'
+                        }, '🚀 CALCULAR VALUATION'),
+                        
+                        h('button', { 
+                            onClick: limpar,
+                            className: 'btn-secondary text-white font-bold py-4 px-8 rounded-lg shadow-lg text-lg'
+                        }, '🗑️ LIMPAR DADOS')
+                    ),
+
+                    // Resultado Principal
+                    calculado && h('div', { className: 'bg-gradient-to-r from-emerald-500 to-green-600 rounded-lg shadow-2xl p-8 text-white mb-6 resultado-destaque' },
+                        h('div', { className: 'text-center' },
+                            h('h2', { className: 'text-2xl font-bold mb-2' }, 
+                                '💎 Preço Justo por Ação (DCF)'
+                            ),
+                            h('div', { className: 'text-7xl font-bold my-6' }, 
+                                'R$ ' + fmt(precoJustoPorAcao)
+                            ),
+                            h('p', { className: 'text-green-100 text-lg mb-6' }, 
+                                'Baseado em Fluxo de Caixa Descontado com perpetuidade'
+                            ),
+                            h('div', { className: 'grid grid-cols-1 md:grid-cols-3 gap-4 mt-6' },
+                                [
+                                    ['Valor da Firma', 'R$ ' + fmt(valorTotalFirma) + ' Mi'],
+                                    ['WACC', wacc.toFixed(2) + '%'],
+                                    ['FCFE ' + anoBase, 'R$ ' + fmt(fcfe) + ' Mi']
+                                ].map(([label, val], i) => 
+                                    h('div', { key: i, className: 'bg-white bg-opacity-20 p-4 rounded-lg' },
+                                        h('div', { className: 'text-sm text-green-100' }, label),
+                                        h('div', { className: 'text-xl font-bold' }, val)
+                                    )
+                                )
+                            )
+                        )
+                    ),
+
+                    // Tabela de Projeções
+                    calculado && h('div', { className: 'bg-white rounded-lg shadow-lg p-6 mb-6' },
+                        h('h2', { className: 'text-xl font-semibold mb-4' }, 
+                            '📈 Projeções de Fluxo de Caixa (FCFE)'
+                        ),
+                        h('div', { className: 'overflow-x-auto' },
+                            h('table', { className: 'w-full text-sm border-collapse' },
+                                h('thead', { className: 'bg-gray-100' },
+                                    h('tr', null,
+                                        ['Ano', 'FCFE (R$ Mi)', 'Crescimento', 'ROIC', 'Valor Presente'].map(th => 
+                                            h('th', { className: 'p-3 text-left font-semibold border-b-2' }, th)
+                                        )
+                                    )
+                                ),
+                                h('tbody', null,
+                                    [
+                                        [anoBase + ' (Base)', fcfe, '-', roicAtual, '-', 'bg-white'],
+                                        [anoBase + 1, fcfe2025, taxaCresc2025, roic2025, vp2025, 'bg-green-50'],
+                                        [anoBase + 2, fcfe2026, taxaCresc2026, roic2026, vp2026, 'bg-green-50'],
+                                        [anoBase + 3, fcfe2027, taxaCresc2027, roic2027, vp2027, 'bg-green-50'],
+                                        ['Perpetuidade', fluxoPerpetuidade, taxaCrescPerp, '-', vpPerpetuidade, 'bg-purple-50']
+                                    ].map(([ano, fcfeVal, cresc, roicVal, vp, bg], i) => 
+                                        h('tr', { key: i, className: bg + ' border-b' },
+                                            h('td', { className: 'p-3 font-medium' }, ano),
+                                            h('td', { className: 'p-3 text-right' }, typeof fcfeVal === 'number' ? fmt(fcfeVal) : fcfeVal),
+                                            h('td', { className: 'p-3 text-right' }, typeof cresc === 'number' ? cresc.toFixed(2) + '%' : cresc),
+                                            h('td', { className: 'p-3 text-right' }, typeof roicVal === 'number' ? roicVal.toFixed(2) + '%' : roicVal),
+                                            h('td', { className: 'p-3 text-right font-semibold' }, typeof vp === 'number' ? fmt(vp) : vp)
+                                        )
+                                    ),
+                                    h('tr', { className: 'bg-gray-100 font-bold' },
+                                        h('td', { colSpan: 4, className: 'p-3 text-right' }, 'Valor Total:'),
+                                        h('td', { className: 'p-3 text-right text-lg text-indigo-700' }, fmt(valorTotalFirma))
+                                    )
+                                )
+                            )
+                        )
+                    ),
+
+                    // Análise de Sustentabilidade
+                    calculado && h('div', { className: 'bg-white rounded-lg shadow-lg p-6 mb-6' },
+                        h('h2', { className: 'text-xl font-semibold mb-4' }, 
+                            '🎯 Análise de Sustentabilidade'
+                        ),
+                        h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-6' },
+                            h('div', { className: 'bg-blue-50 p-4 rounded-lg' },
+                                h('h3', { className: 'font-semibold mb-3 text-blue-900' }, 
+                                    'Convergência de ROIC'
+                                ),
+                                h('div', { className: 'space-y-2 text-sm' },
+                                    [
+                                        ['ROIC ' + anoBase, roicAtual],
+                                        ['ROIC ' + (anoBase + 1), roic2025],
+                                        ['ROIC ' + (anoBase + 2), roic2026],
+                                        ['ROIC ' + (anoBase + 3), roic2027]
+                                    ].map(([label, val], i) => 
+                                        h('div', { key: i, className: 'flex justify-between' },
+                                            h('span', null, label + ':'),
+                                            h('span', { className: 'font-bold' }, val.toFixed(2) + '%')
+                                        )
+                                    ),
+                                    h('div', { className: 'flex justify-between border-t pt-2 mt-2' },
+                                        h('span', null, 'Custo Capital:'),
+                                        h('span', { className: 'font-bold text-blue-700' }, custoCapital.toFixed(2) + '%')
+                                    )
+                                )
+                            ),
+
+                            h('div', { className: 'bg-green-50 p-4 rounded-lg' },
+                                h('h3', { className: 'font-semibold mb-3 text-green-900' }, 
+                                    'Métricas de Qualidade'
+                                ),
+                                h('div', { className: 'space-y-2 text-sm' },
+                                    [
+                                        ['Taxa Reinvestimento', (taxaRr * 100).toFixed(2) + '%'],
+                                        ['NOPAT', 'R$ ' + fmt(nopat) + ' Mi'],
+                                        ['Sobra do NOPAT', 'R$ ' + fmt(sobraNopat) + ' Mi'],
+                                        ['FCFF (Firma)', 'R$ ' + fmt(fcff) + ' Mi'],
+                                        ['FCFE (Acionista)', 'R$ ' + fmt(fcfe) + ' Mi']
+                                    ].map(([label, val], i) => 
+                                        h('div', { key: i, className: 'flex justify-between' + (i === 4 ? ' border-t pt-2 mt-2' : '') },
+                                            h('span', null, label + ':'),
+                                            h('span', { className: 'font-bold' + (i === 4 ? ' text-green-700' : '') }, val)
+                                        )
+                                    )
+                                )
+                            )
+                        ),
+
+                        h('div', { className: 'mt-4 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded' },
+                            h('h4', { className: 'font-semibold text-yellow-900 mb-2' }, 
+                                '⚠️ Premissas Importantes'
+                            ),
+                            h('ul', { className: 'text-sm text-yellow-800 space-y-1' },
+                                h('li', null, '• Taxas de crescimento devem ser sustentáveis e compatíveis com histórico'),
+                                h('li', null, '• ROIC acima do custo de capital tende a convergir pela competição'),
+                                h('li', null, '• Perpetuidade representa ' + ((vpPerpetuidade / valorTotalFirma) * 100).toFixed(1) + '% do valor (>80% pode ser otimista)'),
+                                h('li', null, '• Taxa DI futura deve refletir expectativas macroeconômicas')
+                            )
+                        )
+                    ),
+
+                    // Fundamentação
+                    h('div', { className: 'bg-white rounded-lg shadow-lg p-6' },
+                        h('h3', { className: 'text-lg font-semibold mb-3' }, 
+                            '📚 Fundamentação Metodológica'
+                        ),
+                        h('div', { className: 'text-sm text-gray-700 space-y-2' },
+                            h('p', null, h('strong', null, 'Modelo DCF:'), ' Valor = Σ (FCFEt / (1 + WACC)^t) + Valor Perpetuidade'),
+                            h('p', null, h('strong', null, 'Perpetuidade (Gordon):'), ' VP = [FCFE × (1 + g)] / (WACC - g) × 1/(1 + WACC)^n'),
+                            h('p', null, h('strong', null, 'WACC:'), ' Taxa DI Futura + Prêmio de Risco = ' + wacc.toFixed(2) + '%'),
+                            h('p', null, h('strong', null, 'Convergência ROIC:'), ' ROIC(t+1) = ROIC(t) - 0,2 × (ROIC(t) - Custo Capital)'),
+                            h('p', { className: 'text-xs text-gray-500 mt-3 pt-3 border-t' },
+                                'Referências: Damodaran, Assaf Neto, Póvoa | Códigos CVM: 3.05 (EBIT), 3.11 (Lucro Líquido), 6.01-6.03 (DFC)'
+                            )
+                        )
+                    ),
+
+                    // Footer
+                    h('div', { className: 'text-center text-gray-500 text-sm mt-8 pb-4' },
+                        h('p', null, '© 2025 Calculadora DCF | Desenvolvida com React'),
+                        h('p', { className: 'mt-1' }, 'Ferramenta gratuita para análise fundamentalista de ações')
+                    )
+                )
             );
         }
 
-        ReactDOM.render(<ValuationCalculator />, document.getElementById('root'));
+        // Renderizar aplicação
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(ValuationCalculator));
     </script>
 </body>
 </html>
