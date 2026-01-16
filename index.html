@@ -3,588 +3,191 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora de Valuation DCF</title>
-    <!-- SheetJS para processar Excel -->
+    <title>Valuation Pro: DCF + Bazin + Qualidade</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            background: #f0f2f5;
             padding: 20px;
+            color: #1a202c;
         }
-        .container { max-width: 1200px; margin: 0 auto; }
+        .container { max-width: 1100px; margin: 0 auto; }
         .card {
             background: white;
             border-radius: 12px;
             padding: 24px;
             margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
-        h1 { color: #1a202c; margin-bottom: 8px; font-size: 28px; }
-        h2 { color: #2d3748; margin-bottom: 16px; font-size: 20px; }
-        .subtitle { color: #718096; margin-bottom: 20px; }
         .grid { display: grid; gap: 16px; }
-        .grid-2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
         .grid-3 { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
-        .input-group { margin-bottom: 16px; }
-        label {
-            display: block;
-            font-weight: 600;
-            color: #4a5568;
-            margin-bottom: 6px;
-            font-size: 14px;
-        }
+        label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 5px; color: #4a5568; }
         input {
-            width: 100%;
-            padding: 10px;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 15px;
-            transition: all 0.3s;
+            width: 100%; padding: 10px; border: 2px solid #e2e8f0;
+            border-radius: 8px; font-size: 14px; outline: none;
         }
-        input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
+        input:focus { border-color: #4a90e2; }
         .btn {
-            padding: 14px 28px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            width: 100%;
+            padding: 14px; border: none; border-radius: 8px;
+            font-weight: bold; cursor: pointer; transition: 0.3s; width: 100%;
         }
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+        .btn-primary { background: #2b6cb0; color: white; margin-top: 10px; }
+        .btn-primary:hover { background: #2c5282; }
+        .res-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+        .valuation-card {
+            padding: 20px; border-radius: 12px; text-align: center; color: white;
         }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-        }
-        .btn-secondary {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-        }
-        .btn-secondary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(245, 87, 108, 0.3);
-        }
-        .btn-light {
-            background: #f7fafc;
-            color: #2d3748;
-            border: 2px solid #e2e8f0;
-        }
-        .btn-light:hover { background: #edf2f7; }
-        .resultado {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
-            padding: 40px;
-            border-radius: 12px;
-            text-align: center;
-            animation: fadeIn 0.5s;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .preco-destaque {
-            font-size: 56px;
-            font-weight: bold;
-            margin: 20px 0;
-        }
-        .info-box {
-            background: rgba(255,255,255,0.2);
-            padding: 16px;
-            border-radius: 8px;
-            margin-top: 10px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 16px;
-        }
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        th {
-            background: #f7fafc;
-            font-weight: 600;
-            color: #2d3748;
-        }
-        tr:hover { background: #f7fafc; }
-        .collapsible { cursor: pointer; user-select: none; }
-        .collapsible:hover { color: #667eea; }
-        .content { display: none; margin-top: 20px; }
-        .content.active { display: block; }
-        .alert {
-            padding: 16px;
-            border-radius: 8px;
-            margin-top: 16px;
-            border-left: 4px solid;
-        }
-        .alert-success {
-            background: #d1fae5;
-            border-color: #10b981;
-            color: #065f46;
-        }
-        .alert-info {
-            background: #dbeafe;
-            border-color: #3b82f6;
-            color: #1e40af;
-        }
-        .alert-warning {
-            background: #fef3c7;
-            border-color: #f59e0b;
-            color: #92400e;
-        }
-        .upload-area {
-            border: 2px dashed #cbd5e0;
-            border-radius: 8px;
-            padding: 30px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .upload-area:hover {
-            border-color: #667eea;
-            background: #f7fafc;
-        }
+        .dcf-box { background: #2f855a; }
+        .bazin-box { background: #2c5282; }
+        .preco-val { font-size: 42px; font-weight: 800; margin: 10px 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
+        th { background: #f7fafc; color: #718096; }
+        .badge-pos { color: #2f855a; font-weight: bold; }
+        .badge-neg { color: #c53030; font-weight: bold; }
         .hidden { display: none; }
-        .badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 600;
-            margin-left: 8px;
-        }
-        .badge-new {
-            background: #10b981;
-            color: white;
-        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <div class="card">
-            <h1>📊 Calculadora de Valuation DCF</h1>
-            <p class="subtitle">Análise fundamentalista com importação automática do Fundamentus</p>
+
+<div class="container">
+    <div class="card">
+        <h1>📊 Terminal de Valuation Integrado</h1>
+        <p style="color: #718096; margin-bottom: 15px;">DCF (FCFE), Preço Teto Bazin e Combo de Qualidade</p>
+        <div class="grid grid-3">
+            <button class="btn" style="background: #edf2f7;" onclick="usarExemplo()">🎯 Carregar Exemplo (PRIO3)</button>
+            <button class="btn" style="background: #edf2f7;" onclick="window.location.reload()">🗑️ Limpar Tudo</button>
+            <input type="file" id="excelInput" accept=".xls,.xlsx" style="border: 2px dashed #cbd5e0;">
         </div>
-
-        <!-- Upload Excel Fundamentus -->
-        <div class="card">
-            <h2>📁 Importar Planilha do Fundamentus <span class="badge badge-new">NOVO</span></h2>
-            
-            <div class="alert alert-info">
-                <strong>📖 Como usar:</strong>
-                <ol style="margin-left: 20px; margin-top: 8px;">
-                    <li>Acesse: <a href="https://www.fundamentus.com.br" target="_blank" style="color: #1e40af; text-decoration: underline;">www.fundamentus.com.br</a></li>
-                    <li>Pesquise a empresa (ex: VLID3, PETR4, VALE3)</li>
-                    <li>Clique em "Balanços em Excel" no menu lateral</li>
-                    <li>Resolva o captcha e baixe o arquivo</li>
-                    <li>Faça upload aqui abaixo 👇</li>
-                </ol>
-            </div>
-
-            <div class="grid grid-3" style="margin-top: 20px;">
-                <div class="upload-area" onclick="document.getElementById('excelInput').click()">
-                    <div style="font-size: 48px;">📊</div>
-                    <p style="margin-top: 10px; font-weight: 600;">Selecionar Excel</p>
-                    <p style="font-size: 12px; color: #718096;">Arquivo .xls ou .xlsx do Fundamentus</p>
-                    <input type="file" id="excelInput" accept=".xls,.xlsx" class="hidden" onchange="processarExcel(this)">
-                </div>
-                <div class="input-group">
-                    <label>Ano Base</label>
-                    <input type="number" id="anoBase" value="2024">
-                </div>
-                <div>
-                    <button class="btn btn-light" onclick="usarExemplo()">🎯 Usar Dados de Exemplo</button>
-                </div>
-            </div>
-            <div id="excelStatus"></div>
-        </div>
-
-        <!-- Dados Financeiros -->
-        <div class="card">
-            <h2>💰 Dados Financeiros (R$ Milhões)</h2>
-            <div class="grid grid-3">
-                <div class="input-group">
-                    <label>EBIT / Lucro Operacional <span style="color: #10b981;">●</span></label>
-                    <input type="number" id="ebit" value="1457.6" step="0.1">
-                    <small style="color: #718096; font-size: 11px;">Auto-preenchido do Excel</small>
-                </div>
-                <div class="input-group">
-                    <label>Lucro Líquido <span style="color: #10b981;">●</span></label>
-                    <input type="number" id="lucroLiq" value="1222.4" step="0.1">
-                    <small style="color: #718096; font-size: 11px;">Auto-preenchido do Excel</small>
-                </div>
-                <div class="input-group">
-                    <label>Depreciação/Amortização <span style="color: #f59e0b;">●</span></label>
-                    <input type="number" id="depre" value="167.6" step="0.1">
-                    <small style="color: #f59e0b; font-size: 11px;">Preencher manualmente</small>
-                </div>
-                <div class="input-group">
-                    <label>CAPEX Bruto <span style="color: #f59e0b;">●</span></label>
-                    <input type="number" id="capex" value="344.6" step="0.1">
-                    <small style="color: #f59e0b; font-size: 11px;">Preencher manualmente</small>
-                </div>
-                <div class="input-group">
-                    <label>Variação da NCG <span style="color: #10b981;">●</span></label>
-                    <input type="number" id="ncgVar" value="685.1" step="0.1">
-                    <small style="color: #718096; font-size: 11px;">Calculado automaticamente</small>
-                </div>
-                <div class="input-group">
-                    <label>Total de Ações <span style="color: #f59e0b;">●</span></label>
-                    <input type="number" id="numAcoes" value="1127594551">
-                    <small style="color: #f59e0b; font-size: 11px;">Preencher manualmente</small>
-                </div>
-                <div class="input-group">
-                    <label>Fluxo Líquido de Dívida <span style="color: #10b981;">●</span></label>
-                    <input type="number" id="fluxoDivida" value="306.9" step="0.1">
-                    <small style="color: #718096; font-size: 11px;">Calculado automaticamente</small>
-                </div>
-            </div>
-        </div>
-
-        <!-- Parâmetros -->
-        <div class="card">
-            <h2 class="collapsible" onclick="toggleContent('params')">
-                ⚙️ Parâmetros de Projeção e Desconto <span style="float:right;">▼</span>
-            </h2>
-            <div id="params" class="content">
-                <div class="grid grid-3">
-                    <div class="input-group">
-                        <label>Taxa DI Futura (%)</label>
-                        <input type="number" id="taxaDI" value="13.5" step="0.1">
-                        <small style="color: #718096;">Expectativa: ~13,5%</small>
-                    </div>
-                    <div class="input-group">
-                        <label>Prêmio de Risco (%)</label>
-                        <input type="number" id="premioRisco" value="2.0" step="0.1">
-                        <small style="color: #718096;">Sugestão: 2% a 6%</small>
-                    </div>
-                    <div class="input-group">
-                        <label>Taxa Crescimento Perpétuo (%)</label>
-                        <input type="number" id="taxaCrescPerp" value="3.0" step="0.1">
-                        <small style="color: #718096;">PIB longo prazo</small>
-                    </div>
-                </div>
-
-                <h3 style="margin-top: 20px; margin-bottom: 12px;">Taxas de Crescimento Anual</h3>
-                <div class="grid grid-3">
-                    <div class="input-group">
-                        <label id="label2025">2025 (%)</label>
-                        <input type="number" id="taxaCresc2025" value="5.0" step="0.1">
-                    </div>
-                    <div class="input-group">
-                        <label id="label2026">2026 (%)</label>
-                        <input type="number" id="taxaCresc2026" value="4.0" step="0.1">
-                    </div>
-                    <div class="input-group">
-                        <label id="label2027">2027 (%)</label>
-                        <input type="number" id="taxaCresc2027" value="3.5" step="0.1">
-                    </div>
-                </div>
-
-                <h3 style="margin-top: 20px; margin-bottom: 12px;">ROIC e Sustentabilidade</h3>
-                <div class="grid grid-2">
-                    <div class="input-group">
-                        <label>ROIC Atual (%)</label>
-                        <input type="number" id="roicAtual" value="15.0" step="0.1">
-                    </div>
-                    <div class="input-group">
-                        <label>Custo de Capital (%)</label>
-                        <input type="number" id="custoCapital" value="12.0" step="0.1">
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Botões -->
-        <div class="grid grid-2">
-            <button class="btn btn-primary" onclick="calcular()">🚀 CALCULAR VALUATION</button>
-            <button class="btn btn-secondary" onclick="limpar()">🗑️ LIMPAR DADOS</button>
-        </div>
-
-        <!-- Resultado -->
-        <div id="resultado" class="hidden"></div>
     </div>
 
-    <script>
-        // Funções utilitárias
-        function getId(id) { return document.getElementById(id); }
-        function getVal(id) { return parseFloat(getId(id).value) || 0; }
-        function fmt(val) { return val.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
+    <div class="card">
+        <h2>💰 Dados Financeiros & Operacionais</h2>
+        <div class="grid grid-3">
+            <div class="input-group"><label>Lucro Líquido (R$ Mi)</label><input type="number" id="lucroLiq"></div>
+            <div class="input-group"><label>EBIT (R$ Mi)</label><input type="number" id="ebit"></div>
+            <div class="input-group"><label>Receita Líquida (R$ Mi)</label><input type="number" id="receita"></div>
+            <div class="input-group"><label>Depreciação/Amort. (R$ Mi)</label><input type="number" id="depre"></div>
+            <div class="input-group"><label>CAPEX (R$ Mi)</label><input type="number" id="capex"></div>
+            <div class="input-group"><label>Variação NCG (R$ Mi)</label><input type="number" id="ncgVar"></div>
+            <div class="input-group"><label>Fluxo de Dívida (Líquido)</label><input type="number" id="fluxoDiv"></div>
+            <div class="input-group"><label>Ativo Total (R$ Mi)</label><input type="number" id="ativo"></div>
+            <div class="input-group"><label>Nº de Ações</label><input type="number" id="numAcoes"></div>
+        </div>
+    </div>
 
-        // Função para expandir/recolher seções
-        function toggleContent(id) {
-            const content = document.getElementById(id);
-            if (content) {
-                content.classList.toggle('active');
-                
-                // Mudar a setinha
-                const parent = content.previousElementSibling;
-                if (parent) {
-                    const arrow = parent.querySelector('span[style*="float:right"]');
-                    if (arrow) {
-                        arrow.textContent = content.classList.contains('active') ? '▲' : '▼';
-                    }
-                }
-            }
-        }
+    <div class="card">
+        <h2>⚙️ Premissas de Crescimento e Desconto</h2>
+        <div class="grid grid-3">
+            <div class="input-group"><label>Taxa de Desconto (DI+2%)</label><input type="number" id="ke" value="13.5"></div>
+            <div class="input-group"><label>Yield Desejado Bazin (%)</label><input type="number" id="yieldBazin" value="8"></div>
+            <div class="input-group"><label>Crescimento Perpétuo (g) %</label><input type="number" id="gPerp" value="3"></div>
+            <div class="input-group"><label>Payout Estimado (%)</label><input type="number" id="payout" value="25"></div>
+            <div class="input-group"><label>Patrimônio Líquido (R$ Mi)</label><input type="number" id="pl"></div>
+        </div>
+        <button class="btn btn-primary" onclick="executarValuation()">🚀 RODAR ANÁLISE COMPLETA</button>
+    </div>
 
-        function usarExemplo() {
-            getId('ebit').value = 1457.6;
-            getId('lucroLiq').value = 1222.4;
-            getId('depre').value = 167.6;
-            getId('capex').value = 344.6;
-            getId('ncgVar').value = 685.1;
-            getId('numAcoes').value = 1127594551;
-            getId('fluxoDivida').value = 306.9;
-            
-            getId('excelStatus').innerHTML = '<div class="alert alert-success">✓ Dados de exemplo carregados (Marcopolo S.A.)</div>';
-        }
+    <div id="resultadoArea" class="hidden"></div>
+</div>
 
-        function limpar() {
-            if (confirm('Deseja realmente limpar todos os dados?')) {
-                ['ebit', 'lucroLiq', 'depre', 'capex', 'ncgVar', 'numAcoes', 'fluxoDivida'].forEach(id => {
-                    getId(id).value = 0;
-                });
-                getId('resultado').classList.add('hidden');
-                getId('excelStatus').innerHTML = '';
-            }
-        }
+<script>
+    function usarExemplo() {
+        document.getElementById('lucroLiq').value = 4200;
+        document.getElementById('ebit').value = 5800;
+        document.getElementById('receita').value = 12500;
+        document.getElementById('depre').value = 1100;
+        document.getElementById('capex').value = 2400;
+        document.getElementById('ncgVar').value = -120;
+        document.getElementById('fluxoDiv').value = 500;
+        document.getElementById('ativo').value = 35000;
+        document.getElementById('numAcoes').value = 880000000;
+        document.getElementById('pl').value = 18000;
+    }
 
-        function processarExcel(input) {
-            const file = input.files[0];
-            if (!file) return;
+    function executarValuation() {
+        // Coleta de dados
+        const lucro = parseFloat(document.getElementById('lucroLiq').value) || 0;
+        const ebit = parseFloat(document.getElementById('ebit').value) || 0;
+        const receita = parseFloat(document.getElementById('receita').value) || 1;
+        const depre = parseFloat(document.getElementById('depre').value) || 0;
+        const capex = parseFloat(document.getElementById('capex').value) || 0;
+        const ncgVar = parseFloat(document.getElementById('ncgVar').value) || 0;
+        const fluxoDiv = parseFloat(document.getElementById('fluxoDiv').value) || 0;
+        const numAcoes = parseFloat(document.getElementById('numAcoes').value) || 1;
+        const ke = parseFloat(document.getElementById('ke').value) / 100;
+        const g = parseFloat(document.getElementById('gPerp').value) / 100;
+        const yieldBazin = parseFloat(document.getElementById('yieldBazin').value) / 100;
+        const payout = parseFloat(document.getElementById('payout').value) / 100;
+        const ativo = parseFloat(document.getElementById('ativo').value) || 1;
+        const pl = parseFloat(document.getElementById('pl').value) || 1;
 
-            getId('excelStatus').innerHTML = '<div class="alert alert-info">⏳ Processando planilha...</div>';
+        // 1. DCF (FCFE)
+        const fcfe0 = lucro + depre - capex - ncgVar + fluxoDiv;
+        const precoDCF = ((fcfe0 * (1 + g)) / (ke - g) * 1000000) / numAcoes;
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, {type: 'array'});
-                    
-                    // Processar DRE (primeira aba geralmente)
-                    const dreSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const dreData = XLSX.utils.sheet_to_json(dreSheet, {header: 1});
-                    
-                    // Processar Balanço Patrimonial (segunda aba)
-                    const balSheet = workbook.Sheets[workbook.SheetNames[1]];
-                    const balData = XLSX.utils.sheet_to_json(balSheet, {header: 1});
-                    
-                    let encontrados = [];
-                    let ebitVal = null, lucroLiqVal = null, ncgAtual = null, ncgAnterior = null;
-                    let dividaAtual = null, dividaAnterior = null;
+        // 2. Preço Teto Bazin
+        const dpaSustentavel = (lucro * payout * 1000000) / numAcoes;
+        const precoBazin = dpaSustentavel / yieldBazin;
 
-                    // Buscar EBIT/Lucro Operacional na DRE
-                    dreData.forEach(row => {
-                        const linha = String(row[0] || '').toLowerCase();
-                        const valor = parseFloat(String(row[row.length - 1] || '').replace(/\./g, '').replace(',', '.'));
-                        
-                        if (!isNaN(valor) && valor !== 0) {
-                            if (linha.includes('resultado antes') && linha.includes('financeiro') || 
-                                linha.includes('lucro operacional') ||
-                                linha.includes('ebit')) {
-                                ebitVal = Math.abs(valor);
-                                encontrados.push('EBIT');
-                            }
-                            if (linha.includes('lucro líquido') || linha.includes('lucro/prejuízo consolidado')) {
-                                lucroLiqVal = Math.abs(valor);
-                                encontrados.push('Lucro Líquido');
-                            }
-                        }
-                    });
+        // 3. Combo de Qualidade e Retorno
+        const fco = lucro + depre - ncgVar;
+        const roic = (ebit * 0.85) / pl; // Simplificação NOPAT/PL para exemplo
+        const efCaixa = (ebit - ncgVar) / ebit;
+        const accruals = (lucro - fco) / ativo;
+        const reinvestimento = (capex - depre + ncgVar) / (ebit * 0.85);
+        const gSustentavel = reinvestimento * roic;
 
-                    // Buscar Capital de Giro no Balanço Patrimonial
-                    balData.forEach((row, idx) => {
-                        const linha = String(row[0] || '').toLowerCase();
-                        
-                        if (linha.includes('ativo circulante') && !linha.includes('total')) {
-                            const ativoCirc = parseFloat(String(row[row.length - 1] || '').replace(/\./g, '').replace(',', '.'));
-                            const ativoCircAnt = parseFloat(String(row[row.length - 2] || '').replace(/\./g, '').replace(',', '.'));
-                            
-                            // Procurar passivo circulante nas próximas linhas
-                            for (let i = idx; i < Math.min(idx + 30, balData.length); i++) {
-                                const linhaPassivo = String(balData[i][0] || '').toLowerCase();
-                                if (linhaPassivo.includes('passivo circulante') && !linhaPassivo.includes('total')) {
-                                    const passivoCirc = parseFloat(String(balData[i][balData[i].length - 1] || '').replace(/\./g, '').replace(',', '.'));
-                                    const passivoCircAnt = parseFloat(String(balData[i][balData[i].length - 2] || '').replace(/\./g, '').replace(',', '.'));
-                                    
-                                    if (!isNaN(ativoCirc) && !isNaN(passivoCirc)) {
-                                        ncgAtual = Math.abs(ativoCirc - passivoCirc);
-                                        ncgAnterior = Math.abs(ativoCircAnt - passivoCircAnt);
-                                        encontrados.push('NCG');
-                                    }
-                                    break;
-                                }
-                            }
-                        }
-
-                        // Buscar dívida total
-                        if (linha.includes('empréstimos e financiamentos') || linha.includes('empréstimos')) {
-                            const divida = parseFloat(String(row[row.length - 1] || '').replace(/\./g, '').replace(',', '.'));
-                            const dividaAnt = parseFloat(String(row[row.length - 2] || '').replace(/\./g, '').replace(',', '.'));
-                            
-                            if (!isNaN(divida) && divida > 0) {
-                                dividaAtual = Math.abs(divida);
-                                dividaAnterior = Math.abs(dividaAnt);
-                                encontrados.push('Dívida');
-                            }
-                        }
-                    });
-
-                    // Preencher campos
-                    if (ebitVal) getId('ebit').value = ebitVal;
-                    if (lucroLiqVal) getId('lucroLiq').value = lucroLiqVal;
-                    if (ncgAtual && ncgAnterior) {
-                        const varNCG = Math.abs(ncgAtual - ncgAnterior);
-                        getId('ncgVar').value = varNCG;
-                    }
-                    if (dividaAtual && dividaAnterior) {
-                        const varDivida = dividaAtual - dividaAnterior;
-                        getId('fluxoDivida').value = varDivida;
-                    }
-
-                    if (encontrados.length > 0) {
-                        getId('excelStatus').innerHTML = `
-                            <div class="alert alert-success">
-                                <strong>✓ Planilha processada com sucesso!</strong>
-                                <div style="margin-top: 8px;">
-                                    <strong>Valores extraídos automaticamente:</strong>
-                                    <ul style="margin-left: 20px; margin-top: 4px;">
-                                        ${encontrados.map(item => `<li>${item}</li>`).join('')}
-                                    </ul>
-                                    <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #6ee7b7;">
-                                        <strong style="color: #f59e0b;">⚠️ Preencha manualmente:</strong>
-                                        <ul style="margin-left: 20px; margin-top: 4px;">
-                                            <li>Depreciação/Amortização</li>
-                                            <li>CAPEX Bruto</li>
-                                            <li>Total de Ações em circulação</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    } else {
-                        getId('excelStatus').innerHTML = '<div class="alert alert-warning">⚠️ Planilha processada mas valores não identificados. Preencha manualmente.</div>';
-                    }
-
-                } catch (error) {
-                    console.error(error);
-                    getId('excelStatus').innerHTML = '<div class="alert alert-warning">⚠️ Erro ao processar planilha. Verifique o formato do arquivo.</div>';
-                }
-            };
-
-            reader.readAsArrayBuffer(file);
-        }
-
-        function calcular() {
-            // [Código de cálculo permanece igual - apenas mudei o processamento]
-            const ebit = getVal('ebit');
-            const lucroLiq = getVal('lucroLiq');
-            const depre = getVal('depre');
-            const capex = getVal('capex');
-            const ncgVar = getVal('ncgVar');
-            const numAcoes = getVal('numAcoes');
-            const fluxoDivida = getVal('fluxoDivida');
-            
-            const taxaDI = getVal('taxaDI');
-            const premioRisco = getVal('premioRisco');
-            const taxaCrescPerp = getVal('taxaCrescPerp');
-            const anoBase = getVal('anoBase');
-            
-            const taxaCresc2025 = getVal('taxaCresc2025');
-            const taxaCresc2026 = getVal('taxaCresc2026');
-            const taxaCresc2027 = getVal('taxaCresc2027');
-            
-            const roicAtual = getVal('roicAtual');
-            const custoCapital = getVal('custoCapital');
-
-            getId('label2025').textContent = (anoBase + 1) + ' (%)';
-            getId('label2026').textContent = (anoBase + 2) + ' (%)';
-            getId('label2027').textContent = (anoBase + 3) + ' (%)';
-
-            const nopat = ebit * 0.66;
-            const investLiq = capex - depre;
-            const fcff = nopat + depre - capex - ncgVar;
-            const fcfe = lucroLiq + depre - capex - ncgVar + fluxoDivida;
-            const reinvestimentoTotal = investLiq + ncgVar;
-            const sobraNopat = nopat - reinvestimentoTotal;
-            const taxaRr = reinvestimentoTotal / nopat;
-
-            const wacc = taxaDI + premioRisco;
-
-            const fcfe2025 = fcfe * (1 + taxaCresc2025 / 100);
-            const fcfe2026 = fcfe2025 * (1 + taxaCresc2026 / 100);
-            const fcfe2027 = fcfe2026 * (1 + taxaCresc2027 / 100);
-
-            const roic2025 = roicAtual > custoCapital ? roicAtual - (roicAtual - custoCapital) * 0.2 : roicAtual;
-            const roic2026 = roic2025 > custoCapital ? roic2025 - (roic2025 - custoCapital) * 0.2 : roic2025;
-            const roic2027 = roic2026 > custoCapital ? roic2026 - (roic2026 - custoCapital) * 0.2 : roic2026;
-
-            const vp2025 = fcfe2025 / Math.pow(1 + wacc / 100, 1);
-            const vp2026 = fcfe2026 / Math.pow(1 + wacc / 100, 2);
-            const vp2027 = fcfe2027 / Math.pow(1 + wacc / 100, 3);
-
-            const fluxoPerpetuidade = fcfe2027 * (1 + taxaCrescPerp / 100);
-            const valorPerpetuidade = fluxoPerpetuidade / ((wacc - taxaCrescPerp) / 100);
-            const vpPerpetuidade = valorPerpetuidade / Math.pow(1 + wacc / 100, 3);
-
-            const valorTotalFirma = vp2025 + vp2026 + vp2027 + vpPerpetuidade;
-            const precoJustoPorAcao = (valorTotalFirma * 1000000) / numAcoes;
-
-            // [Resto do HTML de resultado permanece igual]
-            const resultado = `
-                <div class="card resultado">
-                    <h2 style="color: white;">💎 Preço Justo por Ação (DCF)</h2>
-                    <div class="preco-destaque">R$ ${fmt(precoJustoPorAcao)}</div>
-                    <p>Baseado em Fluxo de Caixa Descontado com perpetuidade</p>
-                    
-                    <div class="grid grid-3" style="margin-top: 30px;">
-                        <div class="info-box">
-                            <div style="font-size: 12px;">Valor da Firma</div>
-                            <div style="font-size: 20px; font-weight: bold;">R$ ${fmt(valorTotalFirma)} Mi</div>
-                        </div>
-                        <div class="info-box">
-                            <div style="font-size: 12px;">WACC</div>
-                            <div style="font-size: 20px; font-weight: bold;">${wacc.toFixed(2)}%</div>
-                        </div>
-                        <div class="info-box">
-                            <div style="font-size: 12px;">FCFE ${anoBase}</div>
-                            <div style="font-size: 20px; font-weight: bold;">R$ ${fmt(fcfe)} Mi</div>
-                        </div>
-                    </div>
+        const resArea = document.getElementById('resultadoArea');
+        resArea.classList.remove('hidden');
+        resArea.innerHTML = `
+            <div class="res-grid">
+                <div class="valuation-card dcf-box">
+                    <h3>Preço Justo DCF (FCFE)</h3>
+                    <div class="preco-val">R$ ${precoDCF.toLocaleString('pt-BR', {maximumFractionDigits:2})}</div>
+                    <p>Foco em Geração de Caixa Livre</p>
                 </div>
+                <div class="valuation-card bazin-box">
+                    <h3>Preço Teto Bazin (${(yieldBazin*100).toFixed(0)}%)</h3>
+                    <div class="preco-val">R$ ${precoBazin.toLocaleString('pt-BR', {maximumFractionDigits:2})}</div>
+                    <p>Foco em Dividendos (Payout ${(payout*100).toFixed(0)}%)</p>
+                </div>
+            </div>
 
-                <div class="card">
-                    <h2>📈 Projeções de Fluxo de Caixa (FCFE)</h2>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Ano</th>
-                                <th>FCFE (R$ Mi)</th>
-                                <th>Crescimento</th>
-                                <th>ROIC</th>
-                                <th>Valor Presente</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><strong>${anoBase} (Base)</strong></td>
-                                <td>${fmt(fcfe)}</td>
-                                <td>-</td>
-                                <td>${roicAtual.toFixed(2)}%</td>
-                                <td>-</td>
-                            </tr>
+            <div class="card" style="margin-top:20px;">
+                <h2>Análise de Qualidade e Sustentabilidade</h2>
+                <table>
+                    <thead>
+                        <tr><th>Indicador</th><th>Valor</th><th>Análise</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><b>Eficiência de Caixa</b></td>
+                            <td>${(efCaixa * 100).toFixed(2)}%</td>
+                            <td>${efCaixa > 0.8 ? "✅ Alta conversão" : "⚠️ Monitorar capital de giro"}</td>
+                        </tr>
+                        <tr>
+                            <td><b>Accruals Ratio</b></td>
+                            <td>${accruals.toFixed(4)}</td>
+                            <td>${accruals < 0 ? "✅ Lucro Conservador" : "❌ Lucro Contábil (Alerta)"}</td>
+                        </tr>
+                        <tr>
+                            <td><b>Crescimento Sustentável (g)</b></td>
+                            <td>${(gSustentavel * 100).toFixed(2)}%</td>
+                            <td>Baseado em Reinvestimento e ROIC</td>
+                        </tr>
+                        <tr>
+                            <td><b>Validar Perpetuidade</b></td>
+                            <td>${(g*100).toFixed(2)}%</td>
+                            <td>${g <= gSustentavel ? "✅ Sustentável" : "❌ g da perpetuidade acima do g sustentável"}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+</script>
+</body>
+</html>
