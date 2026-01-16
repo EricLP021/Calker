@@ -1,264 +1,102 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Pro - Extrator Inteligente</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f4f8; padding: 20px; color: #2d3748; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .card { background: white; border-radius: 12px; padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-        h1, h2 { color: #2c5282; margin-bottom: 15px; }
-        .grid { display: grid; gap: 15px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-        label { display: block; font-weight: 700; font-size: 12px; margin-bottom: 5px; color: #4a5568; text-transform: uppercase; }
-        input { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; transition: 0.3s; }
-        input:focus { border-color: #4299e1; outline: none; }
-        .auto-filled { background-color: #ebf8ff; border-color: #bee3f8; color: #2b6cb0; }
-        .manual-fill { border-color: #feebc8; background-color: #fffaf0; }
-        .btn { padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; font-size: 16px; transition: 0.3s; }
-        .btn-calc { background: #38a169; color: white; margin-top: 20px; }
-        .btn-calc:hover { background: #2f855a; transform: translateY(-1px); }
-        .badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 5px; }
-        .badge-auto { background: #4299e1; color: white; }
-        .badge-manual { background: #ed8936; color: white; }
-        .res-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px; }
-        .val-box { padding: 30px; border-radius: 12px; text-align: center; color: white; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-        .dcf-box { background: linear-gradient(135deg, #48bb78 0%, #2f855a 100%); }
-        .bazin-box { background: linear-gradient(135deg, #4299e1 0%, #2b6cb0 100%); }
-        .price-label { font-size: 14px; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }
-        .price-val { font-size: 48px; font-weight: 900; margin: 10px 0; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #edf2f7; font-size: 14px; }
-        th { background: #f7fafc; color: #718096; text-transform: uppercase; font-size: 12px; }
-        .status-msg { padding: 10px; border-radius: 6px; margin-top: 10px; font-weight: 600; display: none; }
-    </style>
-</head>
-<body>
+import pandas as pd
+import numpy as np
 
-<div class="container">
-    <div class="card">
-        <h1>🚀 Terminal Valuation Pro</h1>
-        <p>Faça o upload do Excel do Fundamentus. O sistema buscará os dados automaticamente em todas as abas.</p>
-        <input type="file" id="excelInput" accept=".xls,.xlsx" style="margin-top: 15px; padding: 20px; border: 2px dashed #cbd5e0; cursor: pointer;">
-        <div id="statusMsg" class="status-msg"></div>
-    </div>
+def realizar_valuation_trimodal(caminho_planilha):
+    """
+    Realiza a análise completa baseada nas abas 'Bal. Patrim.' e 'Dem. Result.'
+    conforme as diretrizes de qualidade, Fleuriet e Assaf Neto.
+    """
+    
+    # 1. CARREGAMENTO DOS DADOS (Referência apenas às abas solicitadas)
+    # A planilha tem as contas nas linhas e períodos nas colunas.
+    try:
+        df_balanco = pd.read_excel(caminho_planilha, sheet_name='Bal. Patrim.', index_col=0)
+        df_dre = pd.read_excel(caminho_planilha, sheet_name='Dem. Result.', index_col=0)
+    except Exception as e:
+        return f"Erro ao ler as abas: {e}"
 
-    <div class="card">
-        <h2>🛠️ Revisão de Dados (Ajuste se necessário)</h2>
-        <div class="grid">
-            <div class="input-group">
-                <label>Lucro Líquido (12m) <span class="badge badge-auto">Auto</span></label>
-                <input type="number" id="lucroLiq" class="auto-filled">
-            </div>
-            <div class="input-group">
-                <label>EBIT (12m) <span class="badge badge-auto">Auto</span></label>
-                <input type="number" id="ebit" class="auto-filled">
-            </div>
-            <div class="input-group">
-                <label>Receita Líquida <span class="badge badge-auto">Auto</span></label>
-                <input type="number" id="receita" class="auto-filled">
-            </div>
-            <div class="input-group">
-                <label>Ativo Total <span class="badge badge-auto">Auto</span></label>
-                <input type="number" id="ativo" class="auto-filled">
-            </div>
-            <div class="input-group">
-                <label>Patrimônio Líquido <span class="badge badge-auto">Auto</span></label>
-                <input type="number" id="pl" class="auto-filled">
-            </div>
-            <div class="input-group">
-                <label>Ativo Circulante <span class="badge badge-auto">Auto</span></label>
-                <input type="number" id="ac" class="auto-filled">
-            </div>
-            <div class="input-group">
-                <label>Passivo Circulante <span class="badge badge-auto">Auto</span></label>
-                <input type="number" id="pc" class="auto-filled">
-            </div>
-            <div class="input-group">
-                <label>Disponibilidades (Caixa) <span class="badge badge-auto">Auto</span></label>
-                <input type="number" id="caixa" class="auto-filled">
-            </div>
-            <div class="input-group">
-                <label>Empréstimos Curto Prazo <span class="badge badge-auto">Auto</span></label>
-                <input type="number" id="empCP" class="auto-filled">
-            </div>
-            
-            <div class="input-group">
-                <label>Depreciação/Amort. <span class="badge badge-manual">Manual</span></label>
-                <input type="number" id="depre" class="manual-fill" placeholder="Ex: 1100">
-            </div>
-            <div class="input-group">
-                <label>CAPEX <span class="badge badge-manual">Manual</span></label>
-                <input type="number" id="capex" class="manual-fill" placeholder="Ex: 2400">
-            </div>
-            <div class="input-group">
-                <label>Nº Total de Ações <span class="badge badge-manual">Manual</span></label>
-                <input type="number" id="numAcoes" class="manual-fill" placeholder="Ex: 880000000">
-            </div>
-        </div>
-    </div>
+    # Selecionar a coluna mais recente (última coluna com dados reais)
+    coluna_atual = df_balanco.columns[-1]
+    coluna_anterior = df_balanco.columns[-5] # Aproximação para 1 ano atrás (4 trimestres)
 
-    <div class="card">
-        <h2>📈 Premissas de Mercado</h2>
-        <div class="grid">
-            <div class="input-group"><label>Taxa de Desconto (DI+2%)</label><input type="number" id="ke" value="13.5" step="0.1"></div>
-            <div class="input-group"><label>Crescimento (g) %</label><input type="number" id="gPerp" value="3" step="0.1"></div>
-            <div class="input-group"><label>Yield Bazin Desejado %</label><input type="number" id="yieldBazin" value="8" step="0.1"></div>
-            <div class="input-group"><label>Payout Estimado %</label><input type="number" id="payout" value="25"></div>
-        </div>
-        <button class="btn btn-calc" onclick="processarValuation()">GERAR ANÁLISE COMPLETA</button>
-    </div>
-
-    <div id="resultadoFinal"></div>
-</div>
-
-<script>
-    // Função para limpar e converter valores das células do Excel
-    function cleanVal(v) {
-        if (v === undefined || v === null || v === "") return 0;
-        if (typeof v === 'number') return v;
-        let s = String(v).replace(/\./g, '').replace(',', '.').trim();
-        return parseFloat(s) || 0;
+    # 2. CAPTURA DE VARIÁVEIS - BALANÇO PATRIMONIAL
+    ativo_total = df_balanco.loc['Ativo Total', coluna_atual]
+    ativo_circulante = df_balanco.loc['Ativo Circulante', coluna_atual]
+    passivo_circulante = df_balanco.loc['Passivo Circulante', coluna_atual]
+    caixa_equivalentes = df_balanco.loc['Caixa e Equivalentes de Caixa', coluna_atual]
+    contas_receber = df_balanco.loc['Contas a Receber', coluna_atual]
+    estoques = df_balanco.loc['Estoques', coluna_atual]
+    patrimonio_liquido = df_balanco.loc['Patrimônio Líquido', coluna_atual]
+    divida_cp = df_balanco.loc['Empréstimos e Financiamentos', coluna_atual] # Passivo Circulante
+    divida_lp = df_balanco.loc['Empréstimos e Financiamentos.1', coluna_atual] if 'Empréstimos e Financiamentos.1' in df_balanco.index else 0
+    
+    # 3. CAPTURA DE VARIÁVEIS - DRE E FCO (Assumindo que estão na aba Dem. Result. ou similar)
+    receita_liquida = df_dre.loc['Receita Líquida', coluna_atual]
+    ebit = df_dre.loc['EBIT', coluna_atual]
+    lucro_liquido = df_dre.loc['Lucro Líquido', coluna_atual]
+    depreciacao = df_dre.loc['Depreciação e Amortização', coluna_atual]
+    fco = df_dre.loc['Fluxo de Caixa Operacional', coluna_atual] # Capturado da DRE/Fluxo
+    capex = df_dre.loc['CAPEX', coluna_atual]
+    
+    # 4. MODELO FLEURIET (NCG E SALDO DE TESOURARIA)
+    # Ativo Circulante Operacional (Ciclo Financeiro)
+    aco = contas_receber + estoques 
+    # Passivo Circulante Operacional (Fornecedores, etc)
+    pco = df_balanco.loc['Fornecedores', coluna_atual] + df_balanco.loc['Obrigações Sociais e Trabalhistas', coluna_atual]
+    
+    ncg = aco - pco
+    saldo_tesouraria = caixa_equivalentes - divida_cp
+    
+    # 5. COMBO DE QUALIDADE
+    # Eficiência de Caixa: (EBITDA - Variação NCG) / EBITDA
+    ebitda = ebit + depreciacao
+    var_ncg = ncg - (df_balanco.loc['Contas a Receber', coluna_anterior] + df_balanco.loc['Estoques', coluna_anterior] - 
+                     (df_balanco.loc['Fornecedores', coluna_anterior] + df_balanco.loc['Obrigações Sociais e Trabalhistas', coluna_anterior]))
+    
+    eficiencia_caixa = (ebitda - var_ncg) / ebitda if ebitda != 0 else 0
+    accruals_ratio = (lucro_liquido - fco) / ativo_total
+    margem_fco = (ebitda - var_ncg - (lucro_liquido * 0.34)) / receita_liquida # 34% de impostos estimados
+    
+    # 6. VALUATION (PÓVOA E ASSAF NETO)
+    aliquota_efetiva = 0.34 # Conforme diretriz padrão
+    nopat = ebit * (1 - aliquota_efetiva)
+    
+    # ROIC e Reinvestimento
+    capital_investido = patrimonio_liquido + (divida_cp + divida_lp) - caixa_equivalentes
+    roic = nopat / capital_investido if capital_investido != 0 else 0
+    taxa_reinvestimento = (capex + var_ncg) / nopat if nopat != 0 else 0
+    
+    # Crescimento Sustentável (g)
+    g = taxa_reinvestimento * roic
+    
+    # FCFE e Preço Teto
+    # FCFE = Lucro Líquido + Depreciação - CAPEX - Var_NCG + Novas Dívidas - Amortizações
+    fcfe = lucro_liquido + depreciacao - capex - var_ncg
+    yield_desejado = 0.08 # Mínimo de 8% conforme instruções
+    
+    # Preço Teto Bazin Adaptado (Dividendo Sustentável)
+    # Assume-se que o FCFE é a capacidade máxima de provento sustentável
+    preco_teto_bazin = (fcfe / 1) / yield_desejado # Ajustar por número de ações se disponível
+    
+    # 7. OUTPUT FORMATADO
+    resultados = {
+        "Data de Referência": coluna_atual,
+        "--- MODELO FLEURIET ---": "",
+        "NCG (Necessidade de Capital de Giro)": f"R$ {ncg:,.2f}",
+        "Saldo de Tesouraria": f"R$ {saldo_tesouraria:,.2f}",
+        "NCG / Receita Líquida": f"{(ncg / receita_liquida) * 100:.2f}%",
+        "--- COMBO DE QUALIDADE ---": "",
+        "Eficiência de Caixa (EBITDA-ΔNCG)/EBITDA": f"{eficiencia_caixa:.2f}",
+        "Accruals Ratio (Qualidade do Lucro)": f"{accruals_ratio:.4f} (Negativo é ideal)",
+        "Margem de Fluxo de Caixa (Real/Dinheiro Vivo)": f"{margem_fco * 100:.2f}%",
+        "--- VALUATION & RETORNO ---": "",
+        "ROIC": f"{roic * 100:.2f}%",
+        "Crescimento Sustentável (g)": f"{g * 100:.2f}%",
+        "FCF Yield": f"{(fcfe / (patrimonio_liquido)) * 100:.2f}% (Sobre PL)",
+        "Preço Teto Estimado (Bazin 8%)": f"R$ {preco_teto_bazin:,.2f} (Base FCFE Total)"
     }
+    
+    return resultados
 
-    document.getElementById('excelInput').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        const status = document.getElementById('statusMsg');
-
-        reader.onload = function(evt) {
-            try {
-                const data = new Uint8Array(evt.target.result);
-                const wb = XLSX.read(data, {type: 'array'});
-                let foundAny = false;
-
-                // Varre todas as abas procurando os termos
-                wb.SheetNames.forEach(sheetName => {
-                    const ws = wb.Sheets[sheetName];
-                    const rows = XLSX.utils.sheet_to_json(ws, {header: 1});
-
-                    rows.forEach(row => {
-                        if (!row[0]) return;
-                        let label = String(row[0]).toLowerCase();
-                        let val = cleanVal(row[1]);
-
-                        // DRE
-                        if (label.includes("receita líquida") && !label.includes("var")) document.getElementById('receita').value = val;
-                        if (label.includes("ebit") || (label.includes("operacional") && label.includes("resultado"))) document.getElementById('ebit').value = val;
-                        if (label.includes("lucro líquido") && !label.includes("atribuído")) document.getElementById('lucroLiq').value = val;
-                        
-                        // BALANÇO
-                        if (label.includes("ativo total")) document.getElementById('ativo').value = val;
-                        if (label.includes("patrimônio líquido")) document.getElementById('pl').value = val;
-                        if (label === "ativo circulante") document.getElementById('ac').value = val;
-                        if (label === "passivo circulante") document.getElementById('pc').value = val;
-                        if (label.includes("disponibilidades") || label === "caixa e equivalentes") document.getElementById('caixa').value = val;
-                        if (label.includes("empréstimos") && (label.includes("curto prazo") || label.includes("circulante"))) document.getElementById('empCP').value = val;
-                    });
-                });
-
-                status.style.display = "block";
-                status.style.backgroundColor = "#c6f6d5";
-                status.style.color = "#22543d";
-                status.innerText = "✅ Importação concluída! Verifique os campos e preencha Depreciação, Capex e Ações.";
-            } catch (err) {
-                status.style.display = "block";
-                status.style.backgroundColor = "#fed7d7";
-                status.style.color = "#822727";
-                status.innerText = "❌ Erro ao ler arquivo. Certifique-se que é um Excel do Fundamentus.";
-            }
-        };
-        reader.readAsArrayBuffer(file);
-    });
-
-    function processarValuation() {
-        const d = {
-            lucro: parseFloat(document.getElementById('lucroLiq').value) || 0,
-            ebit: parseFloat(document.getElementById('ebit').value) || 0,
-            receita: parseFloat(document.getElementById('receita').value) || 1,
-            ativo: parseFloat(document.getElementById('ativo').value) || 1,
-            pl: parseFloat(document.getElementById('pl').value) || 1,
-            ac: parseFloat(document.getElementById('ac').value) || 0,
-            pc: parseFloat(document.getElementById('pc').value) || 0,
-            caixa: parseFloat(document.getElementById('caixa').value) || 0,
-            empCP: parseFloat(document.getElementById('empCP').value) || 0,
-            depre: parseFloat(document.getElementById('depre').value) || 0,
-            capex: parseFloat(document.getElementById('capex').value) || 0,
-            numAcoes: parseFloat(document.getElementById('numAcoes').value) || 1,
-            ke: parseFloat(document.getElementById('ke').value) / 100,
-            g: parseFloat(document.getElementById('gPerp').value) / 100,
-            yieldBazin: parseFloat(document.getElementById('yieldBazin').value) / 100,
-            payout: parseFloat(document.getElementById('payout').value) / 100
-        };
-
-        // 1. Fleuriet e NCG
-        const ncg = d.ac - d.pc;
-        const ncgReceita = (ncg / d.receita) * 100;
-        const tesouraria = d.caixa - d.empCP;
-
-        // 2. Combo de Qualidade (Cálculos de 2026-01-16)
-        const fco = d.lucro + d.depre - (ncg * 0.05); // Estima variação NCG como 5% do estoque se não houver histórico
-        const efCaixa = (d.ebit - (ncg*0.05)) / d.ebit;
-        const accruals = (d.lucro - fco) / d.ativo;
-        const cashFlowMargin = (d.ebit - (ncg*0.05) - (d.lucro * 0.15)) / d.receita;
-
-        // 3. Valuation FCFE (Póvoa/Assaf)
-        const nopat = d.ebit * 0.85; // 15% IR médio estimado
-        const fcfe = d.lucro + d.depre - d.capex; 
-        const precoDCF = ((fcfe * (1 + d.g)) / (d.ke - d.g) * 1000000) / d.numAcoes;
-
-        // 4. Bazin
-        const precoBazin = ((d.lucro * d.payout) * 1000000 / d.numAcoes) / d.yieldBazin;
-
-        // 5. Crescimento Sustentável (g = Reinvestimento * ROIC)
-        const roic = nopat / (d.pl + (d.pc + (d.ativo - d.ac - d.pl)) - d.caixa);
-        const reinvest = (d.capex - d.depre) / nopat;
-        const gSustentavel = reinvest * roic;
-
-        const resDiv = document.getElementById('resultadoFinal');
-        resDiv.innerHTML = `
-            <div class="res-grid">
-                <div class="val-box dcf-box">
-                    <div class="price-label">Preço Teto FCFE</div>
-                    <div class="price-val">R$ ${precoDCF.toLocaleString('pt-BR', {maximumFractionDigits:2})}</div>
-                    <p>Fluxo de Caixa Livre p/ Acionista</p>
-                </div>
-                <div class="val-box bazin-box">
-                    <div class="price-label">Preço Teto Bazin</div>
-                    <div class="price-val">R$ ${precoBazin.toLocaleString('pt-BR', {maximumFractionDigits:2})}</div>
-                    <p>Dividend Yield Alvo: ${d.yieldBazin*100}%</p>
-                </div>
-            </div>
-
-            <div class="card" style="margin-top:20px;">
-                <h2>Análise Fleuriet & Capital de Giro</h2>
-                <table>
-                    <tr><th>Indicador</th><th>Valor</th><th>Análise</th></tr>
-                    <tr><td><b>NCG / Receita</b></td><td>${ncgReceita.toFixed(2)}%</td><td>Necessidade de Giro sobre Vendas</td></tr>
-                    <tr><td><b>Saldo de Tesouraria</b></td><td>R$ ${tesouraria.toLocaleString('pt-BR')} Mi</td><td>${tesouraria > 0 ? "✅ Liquidez Positiva" : "❌ Dependente de Bancos"}</td></tr>
-                </table>
-            </div>
-
-            <div class="card">
-                <h2>Combo de Qualidade & Retorno</h2>
-                <table>
-                    <thead>
-                        <tr><th>Métrica</th><th>Valor</th><th>Sinal</th></tr>
-                    </thead>
-                    <tbody>
-                        <tr><td><b>Eficiência de Caixa (EBIT-NCG)/EBIT</b></td><td>${(efCaixa*100).toFixed(2)}%</td><td>${efCaixa > 0.8 ? "✅ Forte" : "⚠️ Fraca"}</td></tr>
-                        <tr><td><b>Accruals Ratio (Qualidade Lucro)</b></td><td>${accruals.toFixed(4)}</td><td>${accruals < 0 ? "✅ Lucro Real" : "⚠️ Lucro Contábil"}</td></tr>
-                        <tr><td><b>Cash Flow Margin (Margem Real)</b></td><td>${(cashFlowMargin*100).toFixed(2)}%</td><td>Dinheiro que sobra após impostos/operação</td></tr>
-                        <tr><td><b>ROIC (Retorno s/ Cap. Investido)</b></td><td>${(roic*100).toFixed(2)}%</td><td>Eficiência na alocação de capital</td></tr>
-                        <tr><td><b>Crescimento Sustentável (g)</b></td><td>${(gSustentavel*100).toFixed(2)}%</td><td>${d.g < gSustentavel ? "✅ g Conservador" : "⚠️ g Agressivo"}</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        `;
-    }
-</script>
-
-</body>
-</html>
+# Execução exemplo
+# print(realizar_valuation_trimodal("caminho_da_planilha.xlsx"))
