@@ -2,188 +2,156 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Terminal Fleuriet & NCG Histórica</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
+<title>Valuation – Extração Profissional</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
-body {
-    font-family: Arial, sans-serif;
-    background: #f4f6f8;
-    padding: 20px;
-}
-.card {
-    background: #ffffff;
-    padding: 20px;
-    border-radius: 10px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-h1, h2 {
-    color: #2c5282;
-}
-.grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 15px;
-}
-label {
-    font-size: 12px;
-    font-weight: bold;
-    color: #555;
-}
-input {
-    width: 100%;
-    padding: 8px;
-    margin-top: 3px;
-}
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 15px;
-}
-th, td {
-    padding: 8px;
-    border-bottom: 1px solid #ddd;
-    text-align: center;
-}
-th {
-    background: #edf2f7;
-}
-.ok { color: green; font-weight: bold; }
-.bad { color: red; font-weight: bold; }
+body { font-family: Arial; background:#f5f5f5; padding:20px }
+.card { background:#fff; padding:20px; border-radius:8px; max-width:900px; margin:auto }
+h2 { margin-top:0 }
+input { width:100%; padding:6px; margin-bottom:10px }
+.ok { color:green; font-weight:bold }
+.bad { color:red; font-weight:bold }
 </style>
 </head>
 
 <body>
-
 <div class="card">
-<h1>📊 Terminal Fleuriet + NCG Histórica</h1>
-<input type="file" id="upload" accept=".xlsx,.xls">
-<p>Abas esperadas: <b>Bal. Patrim.</b> e <b>Dem. Result.</b></p>
-</div>
+<h2>Valuation – Motor Robusto</h2>
 
-<div class="card">
-<h2>📌 Dados do Último Ano</h2>
-<div class="grid">
-<div><label>Ativo Total</label><input id="ativo"></div>
-<div><label>Patrimônio Líquido</label><input id="pl"></div>
-<div><label>Caixa</label><input id="caixa"></div>
-<div><label>Dívida CP</label><input id="divida"></div>
-<div><label>ACO</label><input id="aco"></div>
-<div><label>PCO</label><input id="pco"></div>
-<div><label>NCG</label><input id="ncg"></div>
-<div><label>Tesouraria</label><input id="tesouraria"></div>
-</div>
-</div>
+<input type="file" id="excelInput">
 
-<div class="card">
-<h2>📈 NCG Histórica</h2>
-<table id="tabelaNCG">
-<thead>
-<tr>
-<th>Ano</th>
-<th>ACO</th>
-<th>PCO</th>
-<th>NCG</th>
-<th>Diagnóstico</th>
-</tr>
-</thead>
-<tbody></tbody>
-</table>
+<h3>Resultados Extraídos</h3>
+
+<label>EBIT</label>
+<input id="ebit">
+
+<label>NOPAT</label>
+<input id="nopat">
+
+<label>Capital Investido</label>
+<input id="capital">
+
+<label>ROIC (%)</label>
+<input id="roic">
+
+<label>Reinvestimento</label>
+<input id="reinv">
+
+<label>FCF</label>
+<input id="fcf">
+
+<label>Teste Ciclo Ruim</label>
+<input id="stress">
+
+<div id="status"></div>
 </div>
 
 <script>
-document.getElementById("upload").addEventListener("change", function(e) {
-
-const reader = new FileReader();
-
-reader.onload = function(evt) {
-
-const wb = XLSX.read(new Uint8Array(evt.target.result), { type: "array" });
-const bp = XLSX.utils.sheet_to_json(wb.Sheets["Bal. Patrim."], { header: 1, defval: "" });
-
+// ============================
+// FUNÇÕES BASE (PADRÃO EXCEL)
+// ============================
 function num(v) {
-    return Number(
-        String(v)
-        .replace(/\./g,'')
-        .replace(',','.')
-        .replace(/[^\d\-\.]/g,'')
-    ) || 0;
+    if (v === null || v === undefined) return null;
+    const n = Number(
+        String(v).replace(/\./g,'').replace(',','.').replace(/[^\d\-\.]/g,'')
+    );
+    return isNaN(n) ? null : n;
 }
 
-function findRow(term) {
-    return bp.find(r => r.some(c => String(c).toLowerCase().includes(term)));
-}
-
-function lastCol(row) {
-    for (let i = row.length - 1; i >= 0; i--) {
-        if (row[i] !== "") return i;
+function ultimoNumero(linha) {
+    for (let i = linha.length - 1; i >= 0; i--) {
+        const n = num(linha[i]);
+        if (n !== null) return n;
     }
     return null;
 }
 
-const contasReceber = findRow("contas a receber");
-const estoques = findRow("estoques");
-const fornecedores = findRow("fornecedores");
-const caixaRow = findRow("caixa");
-const dividaRow = findRow("empréstimos");
-const ativoRow = findRow("ativo total");
-const plRow = findRow("patrimônio");
+function acharLinha(sheet, termos) {
+    return sheet.find(l =>
+        termos.some(t => String(l[0]).toLowerCase().includes(t))
+    );
+}
 
-const anos = bp[0].slice(1);
+// ============================
+// PROCESSAMENTO
+// ============================
+document.getElementById('excelInput').addEventListener('change', e => {
 
-const tbody = document.querySelector("#tabelaNCG tbody");
-tbody.innerHTML = "";
+const reader = new FileReader();
+reader.onload = evt => {
 
-anos.forEach((ano, i) => {
+const wb = XLSX.read(new Uint8Array(evt.target.result), { type:'array' });
 
-const col = i + 1;
+const dreName = wb.SheetNames.find(n => n.toLowerCase().includes('result'));
+const balName = wb.SheetNames.find(n => n.toLowerCase().includes('balan'));
 
-const aco = num(contasReceber[col]) + num(estoques[col]);
-const pco = num(fornecedores[col]);
-const ncg = aco - pco;
+if (!dreName || !balName) {
+    document.getElementById('status').innerHTML =
+        '<p class="bad">DRE ou Balanço não encontrados</p>';
+    return;
+}
 
-let diag = "Equilíbrio";
-let classe = "";
+const dre = XLSX.utils.sheet_to_json(wb.Sheets[dreName], { header:1, defval:'' });
+const bal = XLSX.utils.sheet_to_json(wb.Sheets[balName], { header:1, defval:'' });
 
-if (ncg > 0) { diag = "Consome Caixa"; classe = "bad"; }
-if (ncg < 0) { diag = "Gera Caixa"; classe = "ok"; }
+// ============================
+// EXTRAÇÕES
+// ============================
+const ebit = ultimoNumero(acharLinha(dre,['ebit','lucro operacional']));
+const imposto = 0.30;
+const nopat = ebit * (1 - imposto);
 
-tbody.innerHTML += `
-<tr>
-<td>${ano}</td>
-<td>${aco.toLocaleString()}</td>
-<td>${pco.toLocaleString()}</td>
-<td>${ncg.toLocaleString()}</td>
-<td class="${classe}">${diag}</td>
-</tr>
-`;
-});
+const caixa = ultimoNumero(acharLinha(bal,['caixa']));
+const imob = ultimoNumero(acharLinha(bal,['imobilizado']));
+const intang = ultimoNumero(acharLinha(bal,['intang']));
 
-// Último ano
-const last = anos.length;
+const fornecedores = ultimoNumero(acharLinha(bal,['forneced']));
+const clientes = ultimoNumero(acharLinha(bal,['receber']));
+const estoques = ultimoNumero(acharLinha(bal,['estoq']));
 
-const acoAtual = num(contasReceber[last]) + num(estoques[last]);
-const pcoAtual = num(fornecedores[last]);
-const ncgAtual = acoAtual - pcoAtual;
-const tesouraria = num(caixaRow[last]) - num(dividaRow[last]);
+// ============================
+// CAPITAL INVESTIDO (FLEURIET)
+// ============================
+const aco = (clientes || 0) + (estoques || 0);
+const pco = (fornecedores || 0);
+const capital = aco - pco + (imob || 0) + (intang || 0);
 
-document.getElementById("aco").value = acoAtual;
-document.getElementById("pco").value = pcoAtual;
-document.getElementById("ncg").value = ncgAtual;
-document.getElementById("tesouraria").value = tesouraria;
+// ============================
+// REINVESTIMENTO
+// ============================
+const reinv = capital * 0.05; // conservador
 
-document.getElementById("ativo").value = num(ativoRow[last]);
-document.getElementById("pl").value = num(plRow[last]);
-document.getElementById("caixa").value = num(caixaRow[last]);
-document.getElementById("divida").value = num(dividaRow[last]);
+// ============================
+// ROIC & FCF
+// ============================
+const roic = nopat / capital;
+const fcf = nopat - reinv;
+
+// ============================
+// TESTE CICLO RUIM
+// ============================
+const stress = (fcf > 0 && roic > 0.08)
+    ? 'Resiliente'
+    : 'Risco em crise';
+
+// ============================
+// OUTPUT
+// ============================
+document.getElementById('ebit').value = ebit.toFixed(0);
+document.getElementById('nopat').value = nopat.toFixed(0);
+document.getElementById('capital').value = capital.toFixed(0);
+document.getElementById('roic').value = (roic*100).toFixed(1);
+document.getElementById('reinv').value = reinv.toFixed(0);
+document.getElementById('fcf').value = fcf.toFixed(0);
+document.getElementById('stress').value = stress;
+
+document.getElementById('status').innerHTML =
+'<p class="ok">✔ Extração concluída com sucesso</p>';
 
 };
 
 reader.readAsArrayBuffer(e.target.files[0]);
-
 });
 </script>
-
 </body>
 </html>
