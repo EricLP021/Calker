@@ -320,13 +320,26 @@
     </div>
 
     <script>
+        // Funções utilitárias
         function getId(id) { return document.getElementById(id); }
         function getVal(id) { return parseFloat(getId(id).value) || 0; }
         function fmt(val) { return val.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
 
+        // Função para expandir/recolher seções
         function toggleContent(id) {
-            const content = getId(id);
-            content.classList.toggle('active');
+            const content = document.getElementById(id);
+            if (content) {
+                content.classList.toggle('active');
+                
+                // Mudar a setinha
+                const parent = content.previousElementSibling;
+                if (parent) {
+                    const arrow = parent.querySelector('span[style*="float:right"]');
+                    if (arrow) {
+                        arrow.textContent = content.classList.contains('active') ? '▲' : '▼';
+                    }
+                }
+            }
         }
 
         function usarExemplo() {
