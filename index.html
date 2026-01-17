@@ -1,157 +1,297 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<title>Valuation – Extração Profissional</title>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<style>
-body { font-family: Arial; background:#f5f5f5; padding:20px }
-.card { background:#fff; padding:20px; border-radius:8px; max-width:900px; margin:auto }
-h2 { margin-top:0 }
-input { width:100%; padding:6px; margin-bottom:10px }
-.ok { color:green; font-weight:bold }
-.bad { color:red; font-weight:bold }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Valuation PRO - Fleuriet & DCF</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .card {
+            background: #ffffff;
+            color: #1a202c;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+        }
+        h1 { color: #fff; font-size: 28px; margin-bottom: 20px; text-align: center; }
+        h2 { color: #2d3748; font-size: 20px; margin-bottom: 16px; border-bottom: 2px solid #edf2f7; padding-bottom: 8px; }
+        .grid { display: grid; gap: 16px; }
+        .grid-2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+        .grid-3 { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+        .grid-4 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+        
+        label { display: block; font-weight: 600; color: #4a5568; margin-bottom: 6px; font-size: 13px; }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: border 0.3s;
+        }
+        input:focus { outline: none; border-color: #667eea; }
+        input[readonly] { background: #f7fafc; cursor: not-allowed; }
+
+        .btn {
+            padding: 16px 28px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .btn-primary { background: #48bb78; color: white; width: 100%; }
+        .btn-primary:hover { background: #38a169; transform: translateY(-2px); }
+        .btn-secondary { background: #e53e3e; color: white; }
+
+        .upload-area {
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .upload-area:hover { border-color: #667eea; background: #f7fafc; }
+        .upload-area.uploaded { border-color: #48bb78; background: #f0fff4; }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        .badge-info { background: #ebf8ff; color: #2b6cb0; }
+
+        .resultado-container { display: none; margin-top: 30px; }
+        .preco-card {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .preco-valor { font-size: 64px; font-weight: 900; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #edf2f7; }
+        th { background: #f7fafc; color: #718096; }
+        .negativo { color: #e53e3e; }
+        .positivo { color: #38a169; }
+        .highlight { background: #f0fff4; font-weight: bold; }
+    </style>
 </head>
-
 <body>
-<div class="card">
-<h2>Valuation – Motor Robusto</h2>
 
-<input type="file" id="excelInput">
+<div class="container">
+    <h1>🚀 ValuatiOn Expert (Fleuriet & FCFE)</h1>
 
-<h3>Resultados Extraídos</h3>
+    <div class="card">
+        <h2>📁 1. Importação Fundamentus (CSV)</h2>
+        <div class="grid grid-2">
+            <div id="dropDRE" class="upload-area">
+                <div style="font-size: 24px;">📄 DRE</div>
+                <input type="file" id="csvDRE" accept=".csv">
+                <p id="statusDRE" class="badge badge-info">Aguardando arquivo...</p>
+            </div>
+            <div id="dropBalanco" class="upload-area">
+                <div style="font-size: 24px;">📊 Balanço Patrimonial</div>
+                <input type="file" id="csvBalanco" accept=".csv">
+                <p id="statusBalanco" class="badge badge-info">Aguardando arquivo...</p>
+            </div>
+        </div>
+    </div>
 
-<label>EBIT</label>
-<input id="ebit">
+    <div class="card">
+        <h2>💎 2. Análise de Qualidade e Capital de Giro (Modelo Fleuriet)</h2>
+        <div class="grid grid-4">
+            <div><label>EBIT (R$ Mi)</label><input type="number" id="ebit" readonly></div>
+            <div><label>Lucro Líquido (R$ Mi)</label><input type="number" id="lucroLiq" readonly></div>
+            <div><label>NCG (R$ Mi)</label><input type="number" id="ncg" readonly title="Ativo Circ Operacional - Passivo Circ Operacional"></div>
+            <div><label>Saldo Tesouraria (R$ Mi)</label><input type="number" id="st" readonly title="Ativo Financeiro - Passivo Financeiro"></div>
+            <div><label>Accruals Ratio</label><input type="text" id="accruals" readonly></div>
+            <div><label>Eficiência Caixa</label><input type="text" id="eficienciaCx" readonly></div>
+            <div><label>Dívida Líquida (R$ Mi)</label><input type="number" id="dividaLiq" readonly></div>
+            <div><label>Patrimônio Líquido</label><input type="number" id="pl" readonly></div>
+        </div>
+    </div>
 
-<label>NOPAT</label>
-<input id="nopat">
+    <div class="card">
+        <h2>⚙️ 3. Inputs de Valuation e Ajustes Manuais</h2>
+        <div class="grid grid-4">
+            <div><label>Depreciação (Mi)</label><input type="number" id="depre" value="0"></div>
+            <div><label>CAPEX (Mi)</label><input type="number" id="capex" value="0"></div>
+            <div><label>Nº de Ações</label><input type="number" id="numAcoes" value="1"></div>
+            <div><label>Taxa DI (%)</label><input type="number" id="taxaDI" value="11.5"></div>
+            <div><label>Prêmio Risco (%)</label><input type="number" id="premioRisco" value="2.0"></div>
+            <div><label>g (Perpétuo %)</label><input type="number" id="gPerp" value="3.0"></div>
+            <div><label>Reinvestimento (%)</label><input type="number" id="taxaReinv" value="20"></div>
+            <div><label>Margem de Segurança (%)</label><input type="number" id="margemSeg" value="20"></div>
+        </div>
+        <div style="margin-top: 20px;">
+            <button class="btn btn-primary" id="btnCalc">Calcular Preço Justo</button>
+        </div>
+    </div>
 
-<label>Capital Investido</label>
-<input id="capital">
-
-<label>ROIC (%)</label>
-<input id="roic">
-
-<label>Reinvestimento</label>
-<input id="reinv">
-
-<label>FCF</label>
-<input id="fcf">
-
-<label>Teste Ciclo Ruim</label>
-<input id="stress">
-
-<div id="status"></div>
+    <div id="resultado" class="resultado-container">
+        </div>
 </div>
 
 <script>
-// ============================
-// FUNÇÕES BASE (PADRÃO EXCEL)
-// ============================
-function num(v) {
-    if (v === null || v === undefined) return null;
-    const n = Number(
-        String(v).replace(/\./g,'').replace(',','.').replace(/[^\d\-\.]/g,'')
-    );
-    return isNaN(n) ? null : n;
-}
+    let dadosDRE = null;
+    let dadosBalanco = null;
 
-function ultimoNumero(linha) {
-    for (let i = linha.length - 1; i >= 0; i--) {
-        const n = num(linha[i]);
-        if (n !== null) return n;
+    // --- Helpers de Processamento ---
+    function parseCSV(text) {
+        const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
+        const separator = text.includes(';') ? ';' : ',';
+        return lines.map(line => line.split(separator).map(cell => cell.replace(/"/g, '').trim()));
     }
-    return null;
-}
 
-function acharLinha(sheet, termos) {
-    return sheet.find(l =>
-        termos.some(t => String(l[0]).toLowerCase().includes(t))
-    );
-}
+    function cleanValue(val) {
+        if (!val || val === "-") return 0;
+        let clean = val.replace(/\./g, '').replace(',', '.');
+        if (val.includes('(')) clean = '-' + clean.replace(/[()]/g, '');
+        return parseFloat(clean) || 0;
+    }
 
-// ============================
-// PROCESSAMENTO
-// ============================
-document.getElementById('excelInput').addEventListener('change', e => {
+    function findRow(data, searchTerms) {
+        return data.findIndex(row => {
+            const rowName = row[0].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            return searchTerms.some(term => rowName.includes(term.toLowerCase()));
+        });
+    }
 
-const reader = new FileReader();
-reader.onload = evt => {
+    // --- Uploads ---
+    document.getElementById('csvDRE').onchange = e => handleFile(e, 'DRE');
+    document.getElementById('csvBalanco').onchange = e => handleFile(e, 'Balanco');
 
-const wb = XLSX.read(new Uint8Array(evt.target.result), { type:'array' });
+    function handleFile(e, type) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = evt => {
+            if (type === 'DRE') {
+                dadosDRE = parseCSV(evt.target.result);
+                document.getElementById('dropDRE').classList.add('uploaded');
+                document.getElementById('statusDRE').innerText = "DRE Carregada";
+            } else {
+                dadosBalanco = parseCSV(evt.target.result);
+                document.getElementById('dropBalanco').classList.add('uploaded');
+                document.getElementById('statusBalanco').innerText = "Balanço Carregado";
+            }
+            if (dadosDRE && dadosBalanco) processarDados();
+        };
+        reader.readAsText(file, 'ISO-8859-1');
+    }
 
-const dreName = wb.SheetNames.find(n => n.toLowerCase().includes('result'));
-const balName = wb.SheetNames.find(n => n.toLowerCase().includes('balan'));
+    function processarDados() {
+        const col = dadosDRE[0].length - 1; // Última coluna (mais recente)
+        
+        // 1. DRE Data
+        const ebit = cleanValue(dadosDRE[findRow(dadosDRE, ['EBIT', 'Result. Operac'])]?.[col]);
+        const ll = cleanValue(dadosDRE[findRow(dadosDRE, ['Lucro Líquido'])]?.[col]);
+        const receita = cleanValue(dadosDRE[findRow(dadosDRE, ['Receita Líquida'])]?.[col]);
+        
+        // 2. Balanço (Modelo Fleuriet)
+        const ac = cleanValue(dadosBalanco[findRow(dadosBalanco, ['Ativo Circulante'])]?.[col]);
+        const pc = cleanValue(dadosBalanco[findRow(dadosBalanco, ['Passivo Circulante'])]?.[col]);
+        const cx = cleanValue(dadosBalanco[findRow(dadosBalanco, ['Caixa', 'Disponibilidades'])]?.[col]);
+        const aplic = cleanValue(dadosBalanco[findRow(dadosBalanco, ['Aplicações Financeiras'])]?.[col]);
+        const emp = cleanValue(dadosBalanco[findRow(dadosBalanco, ['Empréstimos', 'Financiamentos'])]?.[col]);
+        const pl = cleanValue(dadosBalanco[findRow(dadosBalanco, ['Patrimônio Líquido'])]?.[col]);
+        const elp = cleanValue(dadosBalanco[findRow(dadosBalanco, ['Empréstimos', 'Financiamentos'])]?.[col + 1] || 0); // Exemplo simplificado
 
-if (!dreName || !balName) {
-    document.getElementById('status').innerHTML =
-        '<p class="bad">DRE ou Balanço não encontrados</p>';
-    return;
-}
+        // Fleuriet Logic
+        const ativoFin = cx + aplic;
+        const passivoFin = emp;
+        const aco = ac - ativoFin;
+        const pco = pc - passivoFin;
+        const ncg = aco - pco;
+        const st = ativoFin - passivoFin;
+        
+        // UI Update
+        document.getElementById('ebit').value = (ebit / 1000).toFixed(2);
+        document.getElementById('lucroLiq').value = (ll / 1000).toFixed(2);
+        document.getElementById('ncg').value = (ncg / 1000).toFixed(2);
+        document.getElementById('st').value = (st / 1000).toFixed(2);
+        document.getElementById('dividaLiq').value = ((emp + elp - ativoFin) / 1000).toFixed(2);
+        document.getElementById('pl').value = (pl / 1000).toFixed(2);
 
-const dre = XLSX.utils.sheet_to_json(wb.Sheets[dreName], { header:1, defval:'' });
-const bal = XLSX.utils.sheet_to_json(wb.Sheets[balName], { header:1, defval:'' });
+        // Combo de Qualidade (Simplificado)
+        // Accruals = (LL - (EBITDA - ΔNCG)) / Ativo Total
+        const at = cleanValue(dadosBalanco[findRow(dadosBalanco, ['Ativo Total'])]?.[col]);
+        const accruals = (ll - ebit) / at; // Proxy simplificada sem D&A automático
+        document.getElementById('accruals').value = accruals.toFixed(4);
+        
+        const eficiencia = (ebit - (ncg * 0.1)) / ebit; // Indicador de eficiência de caixa (NCG impactando)
+        document.getElementById('eficienciaCx').value = (eficiencia * 100).toFixed(2) + "%";
+    }
 
-// ============================
-// EXTRAÇÕES
-// ============================
-const ebit = ultimoNumero(acharLinha(dre,['ebit','lucro operacional']));
-const imposto = 0.30;
-const nopat = ebit * (1 - imposto);
+    document.getElementById('btnCalc').onclick = () => {
+        const ll = parseFloat(document.getElementById('lucroLiq').value) || 0;
+        const depre = parseFloat(document.getElementById('depre').value) || 0;
+        const capex = parseFloat(document.getElementById('capex').value) || 0;
+        const ncg = parseFloat(document.getElementById('ncg').value) || 0;
+        const divLiq = parseFloat(document.getElementById('dividaLiq').value) || 0;
+        const nAcoes = parseFloat(document.getElementById('numAcoes').value) || 1;
+        const ke = (parseFloat(document.getElementById('taxaDI').value) + parseFloat(document.getElementById('premioRisco').value)) / 100;
+        const g = parseFloat(document.getElementById('gPerp').value) / 100;
+        const mSeg = parseFloat(document.getElementById('margemSeg').value) / 100;
 
-const caixa = ultimoNumero(acharLinha(bal,['caixa']));
-const imob = ultimoNumero(acharLinha(bal,['imobilizado']));
-const intang = ultimoNumero(acharLinha(bal,['intang']));
+        // FCFE = LL + Depre - Capex - ΔNCG
+        const fcfeBase = ll + depre - capex - (ncg * 0.05); // Assumindo variação de 5% da NCG como proxy se não houver histórico
+        
+        // Perpetuidade: Preço Teto via FCFE
+        // Valor da Firma = FCFE * (1+g) / (ke - g)
+        const valorFirma = (fcfeBase * (1 + g)) / (ke - g);
+        const precoJusto = (valorFirma / nAcoes);
+        const precoComSeguranca = precoJusto * (1 - mSeg);
 
-const fornecedores = ultimoNumero(acharLinha(bal,['forneced']));
-const clientes = ultimoNumero(acharLinha(bal,['receber']));
-const estoques = ultimoNumero(acharLinha(bal,['estoq']));
+        renderizarResultado(precoJusto, precoComSeguranca, fcfeBase, ke);
+    };
 
-// ============================
-// CAPITAL INVESTIDO (FLEURIET)
-// ============================
-const aco = (clientes || 0) + (estoques || 0);
-const pco = (fornecedores || 0);
-const capital = aco - pco + (imob || 0) + (intang || 0);
+    function renderizarResultado(pj, ps, fcfe, ke) {
+        const resDiv = document.getElementById('resultado');
+        resDiv.style.display = 'block';
+        const fmt = v => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-// ============================
-// REINVESTIMENTO
-// ============================
-const reinv = capital * 0.05; // conservador
-
-// ============================
-// ROIC & FCF
-// ============================
-const roic = nopat / capital;
-const fcf = nopat - reinv;
-
-// ============================
-// TESTE CICLO RUIM
-// ============================
-const stress = (fcf > 0 && roic > 0.08)
-    ? 'Resiliente'
-    : 'Risco em crise';
-
-// ============================
-// OUTPUT
-// ============================
-document.getElementById('ebit').value = ebit.toFixed(0);
-document.getElementById('nopat').value = nopat.toFixed(0);
-document.getElementById('capital').value = capital.toFixed(0);
-document.getElementById('roic').value = (roic*100).toFixed(1);
-document.getElementById('reinv').value = reinv.toFixed(0);
-document.getElementById('fcf').value = fcf.toFixed(0);
-document.getElementById('stress').value = stress;
-
-document.getElementById('status').innerHTML =
-'<p class="ok">✔ Extração concluída com sucesso</p>';
-
-};
-
-reader.readAsArrayBuffer(e.target.files[0]);
-});
+        resDiv.innerHTML = `
+            <div class="preco-card">
+                <h2>Valor Justo Estimado (FCFE)</h2>
+                <div class="preco-valor">${fmt(pj)}</div>
+                <p>Com Margem de Segurança: <strong>${fmt(ps)}</strong></p>
+            </div>
+            <div class="card" style="color: #333">
+                <table>
+                    <tr><th>Indicador</th><th>Valor</th></tr>
+                    <tr><td>FCFE Estimado (Mi)</td><td>R$ ${fcfe.toFixed(2)}</td></tr>
+                    <tr><td>Taxa de Desconto (Ke)</td><td>${(ke * 100).toFixed(2)}% (DI + 2%)</td></tr>
+                    <tr><td>Crescimento Perpetuidade (g)</td><td>${document.getElementById('gPerp').value}%</td></tr>
+                    <tr class="highlight"><td>Preço Teto Bazin (8%)</td><td>${fmt((fcfe/0.08)/document.getElementById('numAcoes').value)}</td></tr>
+                </table>
+                <p style="font-size: 11px; margin-top: 15px; color: #718096;">
+                    * Cálculo considera o FCFE estável para a perpetuidade. A NCG foi tratada via Modelo Fleuriet para identificar riscos de liquidez (Saldo de Tesouraria).
+                </p>
+            </div>
+        `;
+        resDiv.scrollIntoView({ behavior: 'smooth' });
+    }
 </script>
+
 </body>
 </html>
